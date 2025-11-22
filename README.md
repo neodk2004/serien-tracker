@@ -1,5 +1,6 @@
 # Serientracker (Go)
 Ein einfacher und effizienter Serientracker, geschrieben in Go, der die OMDb API nutzt, um Serieninformationen abzurufen und persönliche Serienlisten zu verwalten.
+<img width="1771" height="761" alt="Screenshot 2025-11-22 124254" src="https://github.com/user-attachments/assets/c1de464b-49ac-4e0f-abe4-801a56373de1" />
 
 # Funktionen
 Serien hinzufügen über Titel oder IMDb-ID
@@ -78,6 +79,7 @@ Falls das nicht passiert, erhälst du eine Fehlermeldung: "WARNUNG: Bitte trage 
 # Beiträge sind willkommen! Bitte erstellt ein Issue oder Pull Request für Verbesserungen.
 
 # Hinweis: Dieser Serientracker ist ein persönliches Projekt und nicht mit IMDb oder OMDb affiliiert.
+
 
 
 
