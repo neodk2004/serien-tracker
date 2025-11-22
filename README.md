@@ -54,17 +54,16 @@ PDF exportieren
 
 # Projektstruktur
 
-text
-serientracker/
-├── main.go          # Hauptprogramm
-├── fonts/           # Fonts und Schriftarten
-├── static/          # Style-Sheet
-    └── css/
-        └── style.css
-├── templates/         # HTML - Pfad
-    └── index.html
-    └── mylist.html
-└── README.md
+	serientracker/
+	├── main.go          # Hauptprogramm
+	├── fonts/           # Fonts und Schriftarten
+	├── static/          # Style-Sheet
+	    └── css/
+	        └── style.css
+	├── templates/         # HTML - Pfad
+	    └── index.html
+	    └── mylist.html
+	└── README.md
 
 # Konfiguration
 Die Anwendung verwendet folgende Umgebungsvariablen:
@@ -76,4 +75,5 @@ Die Anwendung verwendet folgende Umgebungsvariablen:
 #Beiträge sind willkommen! Bitte erstellt ein Issue oder Pull Request für Verbesserungen.
 
 #Hinweis: Dieser Serientracker ist ein persönliches Projekt und nicht mit IMDb oder OMDb affiliiert.
+
 
