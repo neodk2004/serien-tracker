@@ -4,12 +4,15 @@ Ein einfacher und effizienter Serientracker, geschrieben in Go, der die OMDb API
 
 # Funktionen
 Serien hinzufügen über Titel oder IMDb-ID
+<img width="747" height="185" alt="Screenshot 2025-11-22 124606" src="https://github.com/user-attachments/assets/d8042626-d9bd-4900-92a8-7a9c184d5bee" />
 
 Folgenstatus verwalten (Anzahl der gesehenen Folgen)
+<img width="288" height="282" alt="Screenshot 2025-11-22 124648" src="https://github.com/user-attachments/assets/6f1ef9f6-343d-42be-929c-90625517a7cd" />
 
 Vollständige Serieninformationen (Titel, Staffeln, Episoden, Bewertung, etc.)
 
 PDF-Export der Serienliste zum Teilen mit Freunden
+<img width="1414" height="253" alt="Screenshot 2025-11-22 124724" src="https://github.com/user-attachments/assets/dd78555a-d19e-461e-b5b2-bbf2b0e468b1" />
 
 Lokale Datenspeicherung im JSON-Format
 
@@ -79,6 +82,7 @@ Falls das nicht passiert, erhälst du eine Fehlermeldung: "WARNUNG: Bitte trage 
 # Beiträge sind willkommen! Bitte erstellt ein Issue oder Pull Request für Verbesserungen.
 
 # Hinweis: Dieser Serientracker ist ein persönliches Projekt und nicht mit IMDb oder OMDb affiliiert.
+
 
 
 
