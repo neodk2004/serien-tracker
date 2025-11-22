@@ -57,19 +57,23 @@ PDF exportieren
 text
 serientracker/
 ├── main.go          # Hauptprogramm
-├── handlers/        # API-Handler und Logik
-├── models/          # Datenstrukturen
-├── storage/         # JSON-Speicherung
-├── pdf/             # PDF-Generierung
+├── fonts/           # Fonts und Schriftarten
+├── static/          # Style-Sheet
+    └── css/
+        └── style.css
+├── templates/         # HTML - Pfad
+    └── index.html
+    └── mylist.html
 └── README.md
-Konfiguration
+
+# Konfiguration
 Die Anwendung verwendet folgende Umgebungsvariablen:
 
 # OMDB_API_KEY - OMDb API Schlüssel (erforderlich)
 
-DATA_FILE - Pfad zur lokalen JSON-Datei (optional, Standard: series.json)
 
 
-Beiträge sind willkommen! Bitte erstellt ein Issue oder Pull Request für Verbesserungen.
+#Beiträge sind willkommen! Bitte erstellt ein Issue oder Pull Request für Verbesserungen.
 
-Hinweis: Dieser Serientracker ist ein persönliches Projekt und nicht mit IMDb oder OMDb affiliiert.
+#Hinweis: Dieser Serientracker ist ein persönliches Projekt und nicht mit IMDb oder OMDb affiliiert.
+
