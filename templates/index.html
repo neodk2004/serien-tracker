@@ -161,7 +161,7 @@
                     <form action="/delete" method="post" class="delete-form">
                         <input type="hidden" name="id" value="{{.ID}}">
                         <button type="submit" class="delete-btn" title="Serie löschen">
-                            <span class="delete-icon">×</span>
+                            <span class="delete-icon">&times;</span>
                         </button>
                     </form>
                 </div>
@@ -284,15 +284,22 @@
             });
 
             // Fortschrittskreise animieren
-            const progressCircles = document.querySelectorAll('.progress-fill');
+            // select only the SVG circle elements inside the progress svg to avoid affecting other .progress-fill elements (like divs)
+            const progressCircles = document.querySelectorAll('.progress-circle .progress-fill');
             progressCircles.forEach(circle => {
                 const card = circle.closest('.series-card');
                 if (card) {
                     const progress = parseInt(card.getAttribute('data-progress')) || 0;
                     const circumference = 2 * Math.PI * 18;
                     const offset = circumference - (progress / 100) * circumference;
-                    circle.style.strokeDasharray = circumference;
-                    circle.style.strokeDashoffset = offset;
+                    // prefer setting SVG attributes when available
+                    if (typeof circle.setAttribute === 'function') {
+                        circle.setAttribute('stroke-dasharray', circumference);
+                        circle.setAttribute('stroke-dashoffset', offset);
+                    } else {
+                        circle.style.strokeDasharray = circumference;
+                        circle.style.strokeDashoffset = offset;
+                    }
                 }
             });
         });

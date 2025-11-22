@@ -29,6 +29,7 @@
                 </div>
             </div>
         </div>
+        
     </header>
 
     <!-- Hero Banner für Meine Liste -->
@@ -142,6 +143,21 @@
             </div>
         </div>
         <div class="footer-bottom">
+            {{if not .APIAvailable}}
+            <div class="netflix-alert error">
+                <div class="alert-content">
+                    <span class="alert-icon">⚠️</span>
+                    <span class="alert-text">API nicht verfügbar - Suche deaktiviert</span>
+                </div>
+            </div>
+            {{else}}
+            <div class="netflix-alert success">
+                <div class="alert-content">
+                    <span class="alert-icon">✅</span>
+                    <span class="alert-text">API verbunden - Suche aktiviert</span>
+                </div>
+            </div>
+            {{end}}
             <p>&copy; 2024 Serien Tracker. Inspired by Neodk.</p>
         </div>
     </footer>
