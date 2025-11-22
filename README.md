@@ -68,12 +68,16 @@ PDF exportieren
 # Konfiguration
 Die Anwendung verwendet folgende Umgebungsvariablen:
 
-# OMDB_API_KEY - OMDb API Schlüssel (erforderlich)
+OMDB_API_KEY - OMDb API Schlüssel (erforderlich)
+
+Den Key musst du in der Zeile 71 in der main.go eingeben. 
+Falls das nicht passiert, erhälst du eine Fehlermeldung: "WARNUNG: Bitte trage deinen echten OMDb API-Key in die main.go ein"
 
 
 
-#Beiträge sind willkommen! Bitte erstellt ein Issue oder Pull Request für Verbesserungen.
+# Beiträge sind willkommen! Bitte erstellt ein Issue oder Pull Request für Verbesserungen.
 
-#Hinweis: Dieser Serientracker ist ein persönliches Projekt und nicht mit IMDb oder OMDb affiliiert.
+# Hinweis: Dieser Serientracker ist ein persönliches Projekt und nicht mit IMDb oder OMDb affiliiert.
+
 
 
