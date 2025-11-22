@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meine Liste - Serien Tracker</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Netflix+Sans:wght@300;400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Netflix Header -->
+    <header class="netflix-header">
+        <div class="header-container">
+            <div class="logo">
+                <span class="logo-icon">🎬</span>
+                <span class="logo-text">SERIEN TRACKER</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="/" class="nav-item">Startseite</a>
+                <a href="/mylist" class="nav-item active">Meine Liste</a>
+                <a href="/" class="nav-item">Neu hinzugefügt</a>
+            </nav>
+            <div class="header-actions">
+                <div class="search-box">
+                    <form action="/search" method="get" class="search-form">
+                        <input type="text" name="q" placeholder="Serien suchen..." value="{{.SearchQuery}}">
+                        <button type="submit" class="search-btn">🔍</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Banner für Meine Liste -->
+    <section class="hero-banner">
+        <div class="hero-content">
+            <h1 class="hero-title">Meine Serien Liste</h1>
+            <p class="hero-subtitle">Deine persönliche Serien-Kollektion</p>
+            <div class="hero-stats">
+                <div class="stat">
+                    <span class="stat-number">{{.TotalSeries}}</span>
+                    <span class="stat-label">Serien</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">{{.TotalWatched}}</span>
+                    <span class="stat-label">Abgeschlossen</span>
+                </div>
+            </div>
+        </div>
+        <div class="hero-gradient"></div>
+    </section>
+
+    <div class="poster-grid">
+        {{range .SeriesList}}
+        <div class="poster-item" data-progress="{{.Progress}}">
+            <div class="poster-container">
+
+                {{if .CoverURL}}
+                    <img class="poster-image" src="{{.CoverURL}}" alt="{{.Title}}" onerror="this.style.display='none'">
+                {{else}}
+                    <div class="poster-placeholder">📺</div>
+                {{end}}
+
+                <div class="poster-overlay">
+                    <div class="overlay-content">
+                        <h3 class="overlay-title">{{.Title}}</h3>
+                        <p class="overlay-year">{{.Year}}</p>
+                        <div class="overlay-stats">
+                            <span class="episode-count">{{.EpisodesWatched}}/{{.TotalEpisodes}} Episoden</span>
+                            <span class="status {{.Status}}">{{.Status}}</span>
+                        </div>
+                        <div class="overlay-actions">
+                            <form action="/update" method="post" class="overlay-form">
+                                <input type="hidden" name="id" value="{{.ID}}">
+                                <div class="episode-controls-overlay">
+                                    <input
+                                        type="number"
+                                        name="episodes"
+                                        value="{{.EpisodesWatched}}"
+                                        min="0"
+                                        max="{{.TotalEpisodes}}"
+                                        class="episode-input-small"
+                                    >
+                                    <button type="submit" class="netflix-btn secondary small">✓</button>
+                                </div>
+                            </form>
+                            <div class="overlay-buttons">
+                                <a href="https://www.imdb.com/title/{{.IMDBID}}" target="_blank" class="netflix-btn secondary small">
+                                    IMDb
+                                </a>
+                                <form action="/delete" method="post" class="delete-form-overlay">
+                                    <input type="hidden" name="id" value="{{.ID}}">
+                                    <button type="submit" class="netflix-btn secondary small delete">
+                                        🗑️
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        {{end}}
+    </div>
+
+
+    <!-- Netflix Footer -->
+    <footer class="netflix-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Serien Tracker</h4>
+                <p>Deine persönliche Serienbibliothek</p>
+            </div>
+            <div class="footer-section">
+                <h4>Ansichten</h4>
+                <ul>
+                    <li><a href="/" style="color: var(--netflix-light-gray); text-decoration: none;">Detailansicht</a></li>
+                    <li><a href="/mylist" style="color: var(--netflix-light-gray); text-decoration: none;">Posteransicht</a></li>
+                    <li><a href="/pdf" class="netflix-btn secondary">📄 PDF herunterladen</a></li>
+
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Hilfe</h4>
+                <ul>
+                    <li>Verwende IMDb IDs (tt0944947) oder Serientitel</li>
+                    <li>API Key von omdbapi.com erforderlich!</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 Serien Tracker. Inspired by Neodk.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Hover-Effekte für Poster
+        document.addEventListener('DOMContentLoaded', function() {
+            const posters = document.querySelectorAll('.poster-item');
+            posters.forEach(poster => {
+                poster.addEventListener('mouseenter', function() {
+                    this.style.transform = 'scale(1.08)';
+                    this.style.zIndex = '10';
+                });
+
+                poster.addEventListener('mouseleave', function() {
+                    this.style.transform = 'scale(1)';
+                    this.style.zIndex = '1';
+                });
+            });
+
+            // Fortschrittskreise animieren
+            const progressCircles = document.querySelectorAll('.poster-item .progress-fill');
+            progressCircles.forEach(circle => {
+                const poster = circle.closest('.poster-item');
+                if (poster) {
+                    const progress = parseInt(poster.getAttribute('data-progress')) || 0;
+                    const circumference = 2 * Math.PI * 22;
+                    const offset = circumference - (progress / 100) * circumference;
+                    circle.style.strokeDasharray = circumference;
+                    circle.style.strokeDashoffset = offset;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

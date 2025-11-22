@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serien Tracker - Deine persönliche Netflix-Bibliothek</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Netflix+Sans:wght@300;400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Netflix Header -->
+    <header class="netflix-header">
+        <div class="header-container">
+            <div class="logo">
+                <span class="logo-icon">🎬</span>
+                <span class="logo-text">SERIEN TRACKER</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="/" class="nav-item active">Startseite</a>
+                <a href="/mylist" class="nav-item">Meine Liste</a>
+                <a href="/" class="nav-item">Neu hinzugefügt</a>
+            </nav>
+            <div class="header-actions">
+                <div class="search-box">
+                    <form action="/search" method="get" class="search-form">
+                        <input type="text" name="q" placeholder="Serien suchen..." value="{{.SearchQuery}}">
+                        <button type="submit" class="search-btn">🔍</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Banner -->
+    <section class="hero-banner">
+        <div class="hero-content">
+            <h1 class="hero-title">Deine persönliche Serien-Bibliothek</h1>
+            <p class="hero-subtitle">Behalte den Überblick über alle deine Serien</p>
+            <div class="hero-stats">
+                <div class="stat">
+                    <span class="stat-number">{{.TotalSeries}}</span>
+                    <span class="stat-label">Serien</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">{{.TotalWatched}}</span>
+                    <span class="stat-label">Abgeschlossen</span>
+                </div>
+            </div>
+        </div>
+        <div class="hero-gradient"></div>
+    </section>
+
+    <!-- API Status -->
+
+
+    <!-- Messages -->
+    {{if .ErrorMessage}}
+    <div class="netflix-alert error">
+        <div class="alert-content">
+            <span class="alert-icon">⚠️</span>
+            <span class="alert-text">{{.ErrorMessage}}</span>
+        </div>
+    </div>
+    {{end}}
+
+    {{if .SuccessMessage}}
+    <div class="netflix-alert success">
+        <div class="alert-content">
+            <span class="alert-icon">✅</span>
+            <span class="alert-text">{{.SuccessMessage}}</span>
+        </div>
+    </div>
+    {{end}}
+
+    <!-- Quick Add Section -->
+    <section class="quick-add-section">
+        <div class="section-header">
+            <h2 class="section-title">Serie hinzufügen</h2>
+        </div>
+        <form action="/add" method="post" class="quick-add-form">
+            <input type="text" name="identifier" placeholder="IMDb ID oder Serientitel eingeben..." class="netflix-input">
+            <button type="submit" class="netflix-btn primary" {{if not .APIAvailable}}disabled{{end}}>
+                <span class="btn-icon">+</span>
+                Hinzufügen
+            </button>
+        </form>
+    </section>
+
+    <!-- Search Results -->
+    {{if .SearchQuery}}
+    <section class="search-results-section">
+        <div class="section-header">
+            <h2 class="section-title">Suchergebnisse für "{{.SearchQuery}}"</h2>
+        </div>
+        {{if .SearchResults}}
+        <div class="results-row">
+            {{range .SearchResults}}
+            <div class="result-card">
+                <div class="card-poster">
+                    {{if .Poster}}
+                    <img src="{{.Poster}}" alt="{{.Title}}" class="poster-image" onerror="this.style.display='none'">
+                    {{else}}
+                    <div class="poster-placeholder">
+                        <span class="placeholder-icon">📺</span>
+                    </div>
+                    {{end}}
+                    <div class="card-overlay">
+                        <div class="overlay-content">
+                            <h4 class="card-title">{{.Title}}</h4>
+                            <p class="card-year">{{.Year}}</p>
+                            <form action="/add" method="post" class="overlay-form">
+                                <input type="hidden" name="identifier" value="{{.IMDBID}}">
+                                <button type="submit" class="netflix-btn secondary small">
+                                    <span class="btn-icon">+</span>
+                                    Zur Liste
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {{end}}
+        </div>
+        {{else}}
+        <div class="no-results">
+            <div class="no-results-icon">🔍</div>
+            <h3>Keine Serien gefunden</h3>
+            <p>Probiere einen anderen Suchbegriff wie "Game of Thrones" oder "Breaking Bad"</p>
+        </div>
+        {{end}}
+    </section>
+    {{end}}
+
+    <!-- My Series -->
+    <section class="my-series-section">
+        <div class="section-header">
+            <h2 class="section-title">Meine Serien</h2>
+            <span class="section-count">{{.TotalSeries}} Serien</span>
+        </div>
+
+        {{if .SeriesList}}
+        <div class="series-grid">
+            {{range .SeriesList}}
+            <div class="series-card" data-progress="{{.Progress}}">
+              {{if .CoverURL}}
+    <img class="series-cover" src="{{.CoverURL}}" alt="{{.Title}}" onerror="this.style.display='none'">
+{{else}}
+    <div class="poster-placeholder">📺</div>
+{{end}}
+
+                <div class="card-header">
+                    <div class="progress-ring">
+                        <svg class="progress-circle" width="40" height="40">
+                            <circle class="progress-bg" cx="20" cy="20" r="18"></circle>
+                            <circle class="progress-fill" cx="20" cy="20" r="18"
+                                    stroke-dasharray="113.097"
+                                    stroke-dashoffset="0"></circle>
+                        </svg>
+                        <span class="progress-text">{{.Progress}}%</span>
+                    </div>
+                    <form action="/delete" method="post" class="delete-form">
+                        <input type="hidden" name="id" value="{{.ID}}">
+                        <button type="submit" class="delete-btn" title="Serie löschen">
+                            <span class="delete-icon">×</span>
+                        </button>
+                    </form>
+                </div>
+
+                <div class="card-content">
+                    <h3 class="series-title">{{.Title}}</h3>
+                    <p class="series-year">{{.Year}}</p>
+                    <div class="series-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {{.Progress}}%"></div>
+                        </div>
+                        <span class="progress-stats">{{.EpisodesWatched}}/{{.TotalEpisodes}} Episoden</span>
+                    </div>
+                </div>
+
+                <div class="card-actions">
+                    <form action="/update" method="post" class="update-form">
+                        <input type="hidden" name="id" value="{{.ID}}">
+                        <div class="episode-controls">
+                            <label>Episoden:</label>
+                            <input type="number" name="episodes" value="{{.EpisodesWatched}}"
+                                   min="0" max="{{.TotalEpisodes}}" class="episode-input">
+                            <button type="submit" class="netflix-btn secondary small">
+                                ✓
+                            </button>
+                        </div>
+                    </form>
+                    <a href="https://www.imdb.com/title/{{.IMDBID}}" target="_blank" class="imdb-link">
+                        IMDb
+                    </a>
+                </div>
+
+                <div class="card-status">
+                    <span class="status-badge {{.Status}}">{{.Status}}</span>
+                </div>
+            </div>
+            {{end}}
+        </div>
+        {{else}}
+        <div class="empty-library">
+            <div class="empty-icon">📺</div>
+            <h3>Deine Serien-Bibliothek ist leer</h3>
+            <p>Füge deine ersten Serien hinzu, um den Überblick zu behalten</p>
+            <div class="empty-actions">
+                <form action="/search" method="get" class="search-suggestions">
+                    <button type="submit" name="q" value="Game of Thrones" class="netflix-btn secondary">
+                        Game of Thrones
+                    </button>
+                    <button type="submit" name="q" value="Breaking Bad" class="netflix-btn secondary">
+                        Breaking Bad
+                    </button>
+                    <button type="submit" name="q" value="Stranger Things" class="netflix-btn secondary">
+                        Stranger Things
+                    </button>
+                </form>
+            </div>
+        </div>
+        {{end}}
+    </section>
+
+    <!-- Netflix Footer -->
+    <footer class="netflix-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Serien Tracker</h4>
+                <p>Deine persönliche Netflix-ähnliche Serienbibliothek</p>
+            </div>
+            <div class="footer-section">
+                <h4>Funktionen</h4>
+                <ul>
+                    <li>Serien verwalten</li>
+                    <li>Fortschritt tracken</li>
+                    <li>IMDb Integration</li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Hilfe</h4>
+                <ul>
+                    <li>Verwende IMDb IDs (tt0944947) oder Serientitel</li>
+                    <li>API Key von omdbapi.com erforderlich</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 Serien Tracker. Inspired by Netflix.</p>
+            {{if not .APIAvailable}}
+            <div class="netflix-alert error">
+                <div class="alert-content">
+                    <span class="alert-icon">⚠️</span>
+                    <span class="alert-text">API nicht verfügbar - Suche deaktiviert</span>
+                </div>
+            </div>
+            {{else}}
+            <div class="netflix-alert success">
+                <div class="alert-content">
+                    <span class="alert-icon">✅</span>
+                    <span class="alert-text">API verbunden - Suche aktiviert</span>
+                </div>
+            </div>
+            {{end}}
+        </div>
+    </footer>
+
+    <script>
+        // Hover-Effekte für Karten
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.series-card, .result-card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'scale(1.05)';
+                    this.style.zIndex = '10';
+                });
+
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'scale(1)';
+                    this.style.zIndex = '1';
+                });
+            });
+
+            // Fortschrittskreise animieren
+            const progressCircles = document.querySelectorAll('.progress-fill');
+            progressCircles.forEach(circle => {
+                const card = circle.closest('.series-card');
+                if (card) {
+                    const progress = parseInt(card.getAttribute('data-progress')) || 0;
+                    const circumference = 2 * Math.PI * 18;
+                    const offset = circumference - (progress / 100) * circumference;
+                    circle.style.strokeDasharray = circumference;
+                    circle.style.strokeDashoffset = offset;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
