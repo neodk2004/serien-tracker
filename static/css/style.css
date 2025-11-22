@@ -170,7 +170,40 @@ body {
     display: flex;
     gap: 40px;
 }
+.sort-controls {
+  text-align: center;
+  margin: 1.5rem 0;
+  padding: 0 1rem;
+}
 
+.sort-form {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+}
+
+.sort-form label {
+  color: white;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.sort-form select {
+  background: #111;
+  color: white;
+  border: 1px solid #333;
+  padding: 0.4rem 0.75rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.sort-form select:focus {
+  outline: 2px solid #e50914;
+}
 .stat {
     text-align: center;
 }

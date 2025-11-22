@@ -39,11 +39,11 @@
             <div class="hero-stats">
                 <div class="stat">
                     <span class="stat-number">{{.TotalSeries}}</span>
-                    <span class="stat-label">Serien</span>
+                    <span class="stat-label">Serien gesehen</span>
                 </div>
                 <div class="stat">
                     <span class="stat-number">{{.TotalWatched}}</span>
-                    <span class="stat-label">Abgeschlossen</span>
+                    <span class="stat-label">Abgeschlossen Folgen!</span>
                 </div>
             </div>
         </div>
@@ -51,6 +51,18 @@
     </section>
 
     <div class="poster-grid">
+      <div class="sort-controls">
+  <form method="get" class="sort-form">
+    <label for="sort-select">Sortieren nach:</label>
+    <select name="sort" id="sort-select" onchange="this.form.submit()">
+      <option value="">– Auswahl –</option>
+      <option value="title" {{if and (eq $.SortBy "title") (eq $.Order "asc")}}selected{{end}}>Titel A–Z</option>
+      <option value="title_desc" {{if and (eq $.SortBy "title") (eq $.Order "desc")}}selected{{end}}>Titel Z–A</option>
+      <option value="progress_asc" {{if and (eq $.SortBy "progress") (eq $.Order "asc")}}selected{{end}}>Fortschritt ↑ (niedrig zu hoch)</option>
+      <option value="progress_desc" {{if and (eq $.SortBy "progress") (eq $.Order "desc")}}selected{{end}}>Fortschritt ↓ (hoch zu niedrig)</option>
+    </select>
+  </form>
+</div>
         {{range .SeriesList}}
         <div class="poster-item" data-progress="{{.Progress}}">
             <div class="poster-container">
