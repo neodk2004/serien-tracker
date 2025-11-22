@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"sort"
 	"sync"
 	"time"
 
@@ -64,15 +65,16 @@ type PageData struct {
 	APIAvailable   bool
 	TotalSeries    int
 	TotalWatched   int
+	SortBy         string // z. B. "title", "progress"
+	Order          string // "asc" oder "desc"
 }
 
 // TRAG DEINEN API-KEY HIER EIN
 const (
-	apiKey  = "dein_api_key_hier"  //<<<------------------ DEIN API KEY HIER REIN 
+	apiKey  = "dein_api_key_hier"  //<<<------------------ DEIN API KEY HIER REIN
 	dataFile = "series.json"
 	dbPath  = "series.db"
 )
-
 var (
 	templates  *template.Template
 	seriesDB   []Series
@@ -166,7 +168,62 @@ func saveSeries() {
 		log.Printf("Fehler beim Schreiben der Datei: %v", err)
 	}
 }
-
+//Sortierfunktion
+func sortSeries(series []Series, sortBy, order string) {
+	switch sortBy {
+	case "title":
+		if order == "desc" {
+			sort.Slice(series, func(i, j int) bool {
+				return series[i].Title > series[j].Title
+			})
+		} else {
+			sort.Slice(series, func(i, j int) bool {
+				return series[i].Title < series[j].Title
+			})
+		}
+	case "progress":
+		if order == "desc" {
+			sort.Slice(series, func(i, j int) bool {
+				// Höherer Fortschritt zuerst
+				if series[i].Progress != series[j].Progress {
+					return series[i].Progress > series[j].Progress
+				}
+				// Bei gleichem Fortschritt: nach Titel sortieren (optional für Stabilität)
+				return series[i].Title < series[j].Title
+			})
+		} else {
+			sort.Slice(series, func(i, j int) bool {
+				// Niedriger Fortschritt zuerst
+				if series[i].Progress != series[j].Progress {
+					return series[i].Progress < series[j].Progress
+				}
+				return series[i].Title < series[j].Title
+			})
+		}
+	// Optional: Sortierung nach "EpisodesWatched"
+	case "watched":
+		if order == "desc" {
+			sort.Slice(series, func(i, j int) bool {
+				if series[i].EpisodesWatched != series[j].EpisodesWatched {
+					return series[i].EpisodesWatched > series[j].EpisodesWatched
+				}
+				return series[i].Title < series[j].Title
+			})
+		} else {
+			sort.Slice(series, func(i, j int) bool {
+				if series[i].EpisodesWatched != series[j].EpisodesWatched {
+					return series[i].EpisodesWatched < series[j].EpisodesWatched
+				}
+				return series[i].Title < series[j].Title
+			})
+		}
+	default:
+		// Standard: nach Titel aufsteigend
+		sort.Slice(series, func(i, j int) bool {
+			return series[i].Title < series[j].Title
+		})
+	}
+}
 // HTTP Handler
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
@@ -323,14 +380,43 @@ func myListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	series := getAllSeries()
-	totalSeries, totalWatched := calculateStats(series)
+	//totalSeries, totalWatched := calculateStats(series)
 	apiAvailable := testAPIConnection()
+	sortParam := r.URL.Query().Get("sort")
+		var sortBy, order string
+
+		switch sortParam {
+		case "title":
+			sortBy = "title"
+			order = "asc"
+		case "title_desc":
+			sortBy = "title"
+			order = "desc"
+		case "progress_asc":
+			sortBy = "progress"
+			order = "asc"
+		case "progress_desc":
+			sortBy = "progress"
+			order = "desc"
+		default:
+			sortBy = "title"
+			order = "asc"
+		}
+  sortSeries(series, sortBy, order)
+
+	totalSeries := len(series)
+	totalWatched := 0
+	for _, s := range series {
+		totalWatched += s.EpisodesWatched
+	}
 
 	data := PageData{
 		SeriesList:   series,
 		APIAvailable: apiAvailable,
 		TotalSeries:  totalSeries,
 		TotalWatched: totalWatched,
+		SortBy:         sortBy,
+    Order:          order,
 	}
 
 	err := templates.ExecuteTemplate(w, "mylist.html", data)
@@ -548,7 +634,58 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+//SortierHandler
+func seriesHandler(w http.ResponseWriter, r *http.Request) {
+	// Hole alle Serien aus deinem Speicher (z. B. JSON, DB, etc.)
+	seriesList := getAllSeries() // ← deine Funktion
 
+	// Hole Sortierparameter aus der URL (optional)
+	sortBy := r.URL.Query().Get("sort")
+	order := "asc" // Standard
+
+	// Interpretiere das Dropdown-Format
+	switch sortBy {
+	case "title":
+		sortBy = "title"
+		order = "asc"
+	case "title_desc":
+		sortBy = "title"
+		order = "desc"
+	case "progress_asc":
+		sortBy = "progress"
+		order = "asc"
+	case "progress_desc":
+		sortBy = "progress"
+		order = "desc"
+	default:
+		sortBy = "title"
+		order = "asc"
+	}
+
+	// Sortiere!
+	sortSeries(seriesList, sortBy, order)
+
+	// Berechne ggf. Statistiken
+	totalSeries := len(seriesList)
+	totalWatched := 0
+	for _, s := range seriesList {
+		totalWatched += s.EpisodesWatched
+	}
+
+	data := PageData{
+		SeriesList:   seriesList,
+		TotalSeries:  totalSeries,
+		TotalWatched: totalWatched,
+		SortBy:       sortBy,
+		Order:        order,
+		// ... ggf. andere Felder
+	}
+
+	// Template rendern
+	tmpl := template.Must(template.ParseFiles("templates/index.html"))
+	tmpl.Execute(w, data)
+}
+//apiSeriesHandler
 func apiSeriesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	err := json.NewEncoder(w).Encode(getAllSeries())
