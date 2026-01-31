@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login – Serien Tracker</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--netflix-black);
+        }
+        .login-container {
+            background-color: var(--netflix-dark-gray);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .login-container h1 {
+            color: var(--netflix-red);
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--netflix-light-gray);
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--netflix-gray);
+            border-radius: 4px;
+            background-color: #333;
+            color: var(--netflix-white);
+            font-size: 1em;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--netflix-red);
+        }
+        .error-message {
+            color: var(--netflix-red);
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        .success-message {
+            color: #0f9d58; /* Green */
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        .login-btn {
+            background-color: var(--netflix-red);
+            color: var(--netflix-white);
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%;
+        }
+        .login-btn:hover {
+            background-color: #f40612;
+        }
+        .form-links {
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+        .form-links a {
+            color: var(--netflix-light-gray);
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        .form-links a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>Login</h1>
+        {{if .ErrorMessage}}
+            <p class="error-message">{{.ErrorMessage}}</p>
+        {{end}}
+        <form action="/login" method="post">
+            <div class="form-group">
+                <label for="username">Benutzername</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Passwort</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit" class="login-btn">Anmelden</button>
+        </form>
+        <div class="form-links">
+            <a href="/register">Neu hier? Registrieren</a>
+            <a href="#">Passwort vergessen?</a>
+        </div>
+    </div>
+</body>
+</html>

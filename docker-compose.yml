@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      SESSION_SECRET: "your-super-secret-key" # Still needs a strong key in production!
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      DB_HOST: db # Service name in docker-compose
+      DB_PORT: 5432
+      DB_USER: user
+      DB_PASSWORD: password
+      DB_NAME: seriestracker
+    depends_on:
+      - db
+      - mailhog
+    networks:
+      - series_tracker_network
+
+  db:
+    image: postgres:16-alpine # Using alpine for smaller image
+    environment:
+      POSTGRES_DB: seriestracker
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - pg_data:/var/lib/postgresql/data # Persist PostgreSQL data
+    networks:
+      - series_tracker_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d seriestracker"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mailhog:
+    image: mailhog/mailhog
+    logging:
+      driver: "none"
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - series_tracker_network
+
+volumes:
+  pg_data:
+
+networks:
+  series_tracker_network:
+    driver: bridge

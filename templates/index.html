@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serien Tracker – Startseite</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+
+<!-- ========================= -->
+<!--        GLOBAL HEADER      -->
+<!-- ========================= -->
+<header class="main-header">
+
+    <!-- LOGO LINKS -->
+    <div class="header-left">
+        <div class="logo">
+            <span class="logo-icon">🎬</span>
+            <span class="logo-text">SERIEN TRACKER</span>
+        </div>
+    </div>
+
+    <!-- NAVIGATION + SUCHE MITTE -->
+    <div class="header-center">
+
+        <nav class="nav-menu">
+            <a href="/?user={{.CurrentUser}}">Startseite</a>
+            <a href="/mylist?user={{.CurrentUser}}">Meine Liste</a>
+            <a href="/stats?user={{.CurrentUser}}">Statistiken</a>
+            <a href="/?user={{.CurrentUser}}">Neu hinzugefügt</a>
+        </nav>
+
+        <div class="search-box">
+            <form action="/search" method="get" class="search-form">
+                <input type="hidden" name="user" value="{{.CurrentUser}}">
+                <input type="text" name="q" placeholder="Serien suchen..." value="{{.SearchQuery}}">
+                <button class="search-btn">🔍</button>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- PROFILE RECHTS -->
+    <div class="header-right">
+        <div class="profile-switcher">
+            {{range .Users}}
+            <a href="/?user={{.}}" class="profile-avatar {{if eq . $.CurrentUser}}active{{end}}">
+                <div class="avatar-img">
+                    {{if eq . "Dan"}}🧔‍♂️{{end}}
+                    {{if eq . "Jessica"}}👩{{end}}
+                    {{if eq . "Bernard"}}🐱{{end}}
+                    {{if eq . "Bianca"}}🐱{{end}}
+                </div>
+            </a>
+            {{end}}
+        </div>
+    </div>
+
+</header>
+
+
+<!-- ========================= -->
+<!--        HERO BANNER        -->
+<!-- ========================= -->
+<section class="hero-banner">
+    <div class="hero-content">
+        <h1 class="hero-title">Deine persönliche Serien-Bibliothek</h1>
+        <p class="hero-subtitle">für {{.CurrentUser}}</p>
+
+        <div class="hero-stats">
+            <div class="stat">
+                <span class="stat-number">{{.TotalSeries}}</span>
+                <span class="stat-label">Serien</span>
+            </div>
+            <div class="stat">
+                <span class="stat-number">{{.TotalWatched}}</span>
+                <span class="stat-label">Abgeschlossen</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- ========================= -->
+<!--        ALERTS             -->
+<!-- ========================= -->
+{{if .ErrorMessage}}
+<div class="netflix-alert error">
+    <div class="alert-content">
+        ⚠️ {{.ErrorMessage}}
+    </div>
+</div>
+{{end}}
+
+{{if .SuccessMessage}}
+<div class="netflix-alert success">
+    <div class="alert-content">
+        🎉 {{.SuccessMessage}}
+    </div>
+</div>
+{{end}}
+
+
+<!-- ========================= -->
+<!--     QUICK ADD FORM        -->
+<!-- ========================= -->
+<section class="quick-add-section">
+    <div class="section-header">
+        <h2 class="section-title">Serie hinzufügen</h2>
+    </div>
+
+    <form action="/add" method="post" class="quick-add-form">
+        <input type="hidden" name="user" value="{{.CurrentUser}}">
+        <input type="text" name="identifier" placeholder="IMDb ID oder Serientitel…" class="netflix-input">
+        <button class="netflix-btn primary">
+            <span class="btn-icon">+</span> Hinzufügen
+        </button>
+    </form>
+</section>
+
+
+<!-- ========================= -->
+<!--     DEINE SERIEN GRID     -->
+<!-- ========================= -->
+<section class="poster-view-section">
+
+    <div class="section-header">
+        <h2 class="section-title">Deine Serien</h2>
+    </div>
+
+    <div class="poster-grid">
+
+        {{range .SeriesList}}
+        <div class="poster-item">
+
+            <div class="poster-container">
+                {{if .CoverURL}}
+                <img class="poster-image" src="{{.CoverURL}}" alt="{{.Title}}">
+                {{else}}
+                <div class="poster-image">?</div>
+                {{end}}
+            </div>
+
+            <div class="poster-overlay">
+                <div>
+                    <div class="overlay-title">{{.Title}}</div>
+                    <div class="overlay-year">{{.Year}}</div>
+
+                    <div class="overlay-actions">
+                        <form method="post" action="/update" class="episode-controls-overlay">
+                            <input type="hidden" name="id" value="{{.ID}}">
+                            <input type="number" name="episodes" class="episode-input-small" value="{{.EpisodesWatched}}">
+                            <button class="netflix-btn secondary small">Speichern</button>
+                        </form>
+
+                        <form method="post" action="/delete" class="delete-form-overlay">
+                            <input type="hidden" name="id" value="{{.ID}}">
+                            <button class="netflix-btn secondary small delete">Löschen</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        {{end}}
+
+    </div>
+
+</section>
+
+
+<!-- FOOTER -->
+<footer class="netflix-footer">
+    <div class="footer-content">
+        <div class="footer-section">
+            <h4>Serien Tracker</h4>
+            <ul>
+                <li>Deine persönliche Serienbibliothek</li>
+            </ul>
+        </div>
+
+        <div class="footer-section">
+            <h4>Ansichten</h4>
+            <ul>
+                <li><a href="/mylist?user={{.CurrentUser}}">Posteransicht</a></li>
+                <li><a href="/pdf">PDF herunterladen</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="footer-bottom">© 2024 Serien Tracker</div>
+</footer>
+
+</body>
+</html>

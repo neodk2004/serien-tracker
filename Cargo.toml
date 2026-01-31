@@ -1,0 +1,23 @@
+# series_tracker/Cargo.toml
+
+[package]
+name = "series_tracker"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Bisherige Abhängigkeiten:
+rusqlite = { version = "0.31", features = ["bundled"] }
+csv = "1.3"
+serde = { version = "1.0", features = ["derive"] }
+clap = { version = "4.5", features = ["derive"] }
+
+# NEU HINZUFÜGEN: Für einfaches Error Handling (anyhow)
+anyhow = "1.0"
+
+# NEU HINZUFÜGEN: Für HTTP-Anfragen (minreq) – wenn Sie planen,
+# Daten von externen APIs abzurufen, anstatt nur die TSV-Dateien zu verwenden.
+minreq = "2.9"
+# In Cargo.toml
+reqwest = { version = "0.12", features = ["json"] }
+tokio = { version = "1", features = ["full"] } # Reqwest benötigt einen Async-Runtime wie Tokio

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistiken – Serien Tracker</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+
+<header class="main-header">
+    <div class="header-left">
+        <div class="logo"><span class="logo-icon">🎬</span><span class="logo-text">SERIEN TRACKER</span></div>
+    </div>
+
+    <div class="header-center">
+        <nav class="nav-menu">
+            <a href="/?user={{.CurrentUser}}">Startseite</a>
+            <a href="/mylist?user={{.CurrentUser}}">Meine Liste</a>
+            <a href="/stats?user={{.CurrentUser}}">Statistiken</a>
+            <a href="/?user={{.CurrentUser}}">Neu hinzugefügt</a>
+        </nav>
+
+        <form action="/search" method="get" class="search-form">
+            <input type="hidden" name="user" value="{{.CurrentUser}}">
+            <input type="text" name="q" placeholder="Serien suchen..." value="{{.SearchQuery}}">
+            <button class="search-btn">🔍</button>
+        </form>
+    </div>
+
+    <div class="header-right">
+        <div class="profile-switcher">
+            {{range .Users}}
+            <a href="/?user={{.}}" class="profile-avatar {{if eq . $.CurrentUser}}active{{end}}">
+                <div class="avatar-img">
+                    {{if eq . "Dan"}}🧔‍♂️{{end}}
+                    {{if eq . "Jessica"}}👩{{end}}
+                    {{if eq . "Bernard"}}🐱{{end}}
+                    {{if eq . "Bianca"}}🐱{{end}}
+                </div>
+            </a>
+            {{end}}
+        </div>
+    </div>
+</header>
+
+
+<section class="hero-banner">
+    <div class="hero-content">
+        <h1 class="hero-title">Statistiken von {{.CurrentUser}}</h1>
+        <p class="hero-subtitle">Dein Streaming-Profil</p>
+
+        <div class="hero-stats">
+            <div class="stat"><span class="stat-number">{{.TotalSeries}}</span><span class="stat-label">Serien</span></div>
+            <div class="stat"><span class="stat-number">{{.CompletedCount}}</span><span class="stat-label">Abgeschlossen</span></div>
+        </div>
+    </div>
+</section>
+
+
+<section class="quick-add-section">
+
+    <h2 class="section-title">Abschluss-Ranking</h2>
+
+    {{range .UserStats}}
+    <div style="margin:10px 0;">
+        <strong>{{.Name}}</strong> – {{.Completed}} Serien
+        <div style="background:#333;height:6px;border-radius:4px;margin-top:4px;">
+            <div style="background:#e50914;height:6px;width:{{.Percent}}%;border-radius:4px;"></div>
+        </div>
+    </div>
+    {{end}}
+
+</section>
+
+
+<footer class="netflix-footer">
+    <div class="footer-bottom">© 2024 Serien Tracker</div>
+</footer>
+
+</body>
+</html>
