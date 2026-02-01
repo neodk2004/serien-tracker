@@ -574,3 +574,41 @@ body {
         font-size: 1.5em;
     }
 }
+/* Series Interactions */
+.poster-rating {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    background: rgba(0, 0, 0, 0.75);
+    color: #ffc107;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    z-index: 5;
+    pointer-events: none;
+}
+
+.overlay-community {
+    margin-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 10px;
+}
+
+.community-link {
+    color: var(--netflix-red);
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: 0.2s;
+}
+
+.community-link:hover {
+    transform: translateX(5px);
+    text-decoration: underline;
+}

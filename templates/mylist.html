@@ -131,8 +131,11 @@
                             <!-- DELETE FORM -->
                             <form method="post" action="/delete" class="delete-form-overlay">
                                 <input type="hidden" name="id" value="{{.ID}}">
-                                <button type="submit" class="btn-delete">Löschen</button>
+                                <button class="netflix-btn secondary small delete">Löschen</button>
                             </form>
+                        </div>
+                        <div class="overlay-community">
+                            <a href="/series?id={{.IMDBID}}" class="community-link">💬 Kommentare & Bewertung</a>
                         </div>
                     </div>
                 </div>

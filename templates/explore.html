@@ -92,6 +92,11 @@
                         <div class="overlay-title">{{.Title}}</div>
                         <div class="overlay-year">{{.Year}}</div>
                         <div class="overlay-status">{{.Status}} ({{.EpisodesWatched}}/{{.TotalEpisodes}})</div>
+                        <div class="overlay-community" style="margin-top: 10px;">
+                            <a href="/series?id={{.IMDBID}}" class="community-link"
+                                style="color: var(--netflix-red); text-decoration: none; font-weight: bold; font-size: 13px;">💬
+                                Community</a>
+                        </div>
                     </div>
                 </div>
 
