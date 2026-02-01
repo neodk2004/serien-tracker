@@ -22,78 +22,44 @@ Ein robuster und effizienter Serientracker als Webanwendung, geschrieben in Go. 
 *   **OMDb API-Schlüssel:** Registriere dich kostenlos unter [https://www.omdbapi.com/apikey.aspx](https://www.omdbapi.com/apikey.aspx)
 *   **Umgebungsvariablen:** Die Anwendung wird primär über Umgebungsvariablen konfiguriert (siehe `.env.example`).
 
-## Installation & Ausführung (Endbenutzerfreundliches Skript)
+## Schnellstart mit Docker 🐳
 
-Dieses "Installationsskript" führt die notwendigen Schritte aus, um die Anwendung über Docker Compose auf Ihrem System einzurichten und zu starten. Es wird überprüft, ob Docker und Docker Compose installiert sind, das Repository geklont und die Anwendung gestartet.
+Die einfachste Methode, den Serien-Tracker zu nutzen, ist über Docker Compose. Dies startet die Go-Anwendung, eine PostgreSQL-Datenbank und MailHog (zum Testen von E-Mails).
 
-**Wichtig:** Der OMDb API-Schlüssel kann über die Umgebungsvariable `OMDB_API_KEY` oder in einer `.env` Datei gesetzt werden. Falls keine Variable gesetzt ist, wird ein Standard-Schlüssel verwendet, der jedoch limitiert sein kann.
+### 1. Voraussetzungen
+Stelle sicher, dass **Docker** und **Docker Compose** auf deinem System installiert sind.
+
+### 2. Installation & Konfiguration
+Klone das Repository und erstelle deine Konfigurationsdatei:
 
 ```bash
-#!/bin/bash
+# Repository klonen
+git clone https://github.com/dein-benutzername/serientracker.git
+cd serientracker
 
-# --- 1. Überprüfen der Voraussetzungen ---
- echo "--- Überprüfe die Installation von Docker und Docker Compose ---"
-if ! command -v docker &> /dev/null
-then
-    echo "Docker ist nicht installiert. Bitte installieren Sie Docker Desktop (https://www.docker.com/products/docker-desktop) oder Ihren Docker-Client."
-    exit 1
-fi
-
-# Überprüfen, ob `docker compose` oder `docker-compose` verfügbar ist
-if command -v docker compose &> /dev/null
-then
-    DOCKER_COMPOSE_CMD="docker compose"
-elif command -v docker-compose &> /dev/null
-then
-    DOCKER_COMPOSE_CMD="docker-compose"
-else
-    echo "Docker Compose ist nicht installiert. Bitte installieren Sie es."
-    echo "Wenn Sie Docker Desktop verwenden, ist es bereits enthalten."
-    exit 1
-fi
- echo "Docker und Docker Compose ($DOCKER_COMPOSE_CMD) sind installiert."
- echo ""
-
-# --- 2. Repository klonen (falls noch nicht geschehen) ---
-REPO_URL="https://github.com/dein-benutzername/serientracker.git" # ERSETZE DIES DURCH DEIN AKTUELLES REPO!
-REPO_DIR="serientracker"
-
-if [ ! -d "$REPO_DIR" ]; then
-    echo "--- Klone das Repository von $REPO_URL ---"
-    git clone "$REPO_URL" "$REPO_DIR"
-    cd "$REPO_DIR"
-else
-    echo "--- Repository '$REPO_DIR' existiert bereits. Wechsle in das Verzeichnis. ---"
-    cd "$REPO_DIR"
-    echo "--- Ziehe die neuesten Änderungen ---"
-    git pull
-fi
-
- echo ""
- echo "--- HINWEIS ZUM OMDb API-SCHLÜSSEL ---"
- echo "Der OMDb API-Schlüssel sollte idealerweise über eine .env Datei oder"
- echo "Umgebungsvariable gesetzt werden. Siehe .env.example für Details."
- echo "Drücken Sie ENTER, um fortzufahren oder STRG+C, um abzubrechen..."
- read -r
-
-# --- 4. Docker Compose starten ---
- echo "--- Starte die Anwendung mit Docker Compose ---"
- echo "Dies wird das Go-Anwendungs-Image erstellen, die PostgreSQL-Datenbank und MailHog starten."
-"$DOCKER_COMPOSE_CMD" up --build -d # -d für detached mode (im Hintergrund)
-
-if [ $? -eq 0 ]; then
-    echo ""
-    echo "✅ Anwendung erfolgreich gestartet!"
- echo "🚀 Die Serientracker Web-Oberfläche ist erreichbar unter: http://localhost:8081"
- echo "📧 Die MailHog Web-Oberfläche (zum Testen von E-Mails) ist erreichbar unter: http://localhost:8025"
- echo ""
- echo "Um die Logs zu sehen, nutzen Sie: $DOCKER_COMPOSE_CMD logs -f"
- echo "Um die Dienste zu stoppen: $DOCKER_COMPOSE_CMD down"
-else
-    echo "❌ Fehler beim Starten der Anwendung mit Docker Compose."
-    echo "Bitte überprüfen Sie die Fehlermeldungen oben."
-fi
+# Umgebungsvariablen konfigurieren
+cp .env.example .env
 ```
+
+Öffne die `.env` Datei und trage deinen **OMDb API-Key** ein. Du kannst dort auch Passwörter und Ports anpassen.
+
+### 3. Anwendung starten
+Starte alle Dienste mit einem einzigen Befehl:
+
+```bash
+docker compose up --build -d
+```
+
+### 4. Zugriff
+Sobald die Container laufen, erreichst du die Anwendung unter:
+- **Web-Oberfläche:** [http://localhost:8081](http://localhost:8081)
+- **MailHog (E-Mail Test):** [http://localhost:8025](http://localhost:8025)
+
+---
+
+## Manuelle Installation & Ausführung (Skript)
+
+Falls du ein automatisiertes Skript bevorzugst, kannst du dieses nutzen:
 
 ## Wichtige Hinweise für die Entwicklung
 
