@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "${PORT:-8081}:8081"
+      - "${APP_PORT:-8081}:8081"
     environment:
       SESSION_SECRET: "${SESSION_SECRET:-your-super-secret-key}"
       SMTP_HOST: "${SMTP_HOST:-mailhog}"

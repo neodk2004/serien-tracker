@@ -1,75 +1,91 @@
-# 🎬 Serien-Tracker (Go Web Application)
+# Serientracker (Go)
+Ein einfacher und effizienter Serientracker, geschrieben in Go, der die OMDb API nutzt, um Serieninformationen abzurufen und persönliche Serienlisten zu verwalten.
+<img width="1771" height="761" alt="Screenshot 2025-11-22 124254" src="https://github.com/user-attachments/assets/c1de464b-49ac-4e0f-abe4-801a56373de1" />
 
-Ein moderner, datengetriebener Serientracker mit einem **"Nerd Dashboard"**. Die Anwendung nutzt die OMDb API für Informationen, PostgreSQL für die Persistenz und Docker für ein schmerzfreies Deployment.
+# Funktionen
+Serien hinzufügen über Titel oder IMDb-ID
+<img width="747" height="185" alt="Screenshot 2025-11-22 124606" src="https://github.com/user-attachments/assets/d8042626-d9bd-4900-92a8-7a9c184d5bee" />
 
-![Nerd Dashboard Preview](Screenshot%202025-11-22%20124254.png)
+Folgenstatus verwalten (Anzahl der gesehenen Folgen)</br>
+<img width="288" height="282" alt="Screenshot 2025-11-22 124648" src="https://github.com/user-attachments/assets/6f1ef9f6-343d-42be-929c-90625517a7cd" />
 
-## 🚀 Features
 
-*   **Nerd-Statistiken**: Globaler Rang, Binge-Zeit-Berechnung (mit Vergleichen wie "Herr der Ringe" Durchläufen) und Fortschrittsbalken.
-*   **Globales Leaderboard**: Vergleiche deinen Fortschritt mit anderen Nutzern.
-*   **Admin Panel**: Benutzerverwaltung (Passwort-Reset, Löschen, Hinzufügen) direkt in der Web-Oberfläche.
-*   **Responsive Design**: Optimiert für Desktop, Tablet und Smartphone (Netflix-Aesthetic).
-*   **Avatar-System**: Automatische Initialen-Avatare basierend auf dem Benutzernamen.
-*   **PDF-Export**: Exportiere deine gesamte Liste als professionelles Dokument.
+Vollständige Serieninformationen (Titel, Staffeln, Episoden, Bewertung, etc.)
 
----
+PDF-Export der Serienliste zum Teilen mit Freunden
+<img width="1414" height="253" alt="Screenshot 2025-11-22 124724" src="https://github.com/user-attachments/assets/dd78555a-d19e-461e-b5b2-bbf2b0e468b1" />
 
-## 🛠️ Schnellstart mit Docker 🐳
+Lokale Datenspeicherung im JSON-Format
 
-Die Anwendung ist vollständig containerisiert. Du musst Go nicht lokal installiert haben.
+# Voraussetzungen
+Go 1.16 oder höher
 
-### 1. Voraussetzungen
-- **Docker & Docker Compose** installiert.
-- Einen **OMDb API-Key** (kostenlos unter [omdbapi.com](https://www.omdbapi.com/apikey.aspx)).
+OMDb API-Schlüssel (kostenlos registrierbar unter https://www.omdbapi.com/apikey.aspx)
 
-### 2. Setup
-```bash
-# Repository klonen
-git clone https://github.com/dein-benutzername/serientracker.git
-cd serientracker
 
-# Konfigurationsdatei erstellen
-cp .env.example .env
-```
+Installation
+Repository klonen:
+`git clone https://github.com/dein-benutzername/serientracker.git`
+`cd serientracker`
 
-### 3. Konfiguration
-Öffne die `.env` Datei und trage deinen Key ein:
-```env
-OMDB_API_KEY=dein_key_hier
-SESSION_SECRET=ein_sehr_langer_geheimer_string
-```
+Abhängigkeiten installieren:
 
-### 4. Starten
-```bash
-docker compose up --build -d
-```
+`go mod download`
 
----
+OMDb API-Schlüssel konfigurieren:
 
-## 🖥️ Zugriff
-Sobald die Container laufen:
-- **Web-App**: [http://localhost:8081](http://localhost:8081)
-- **Admin-Bereich**: Registriere den ersten Nutzer – dieser wird automatisch Administrator.
-- **E-Mail Test (MailHog)**: [http://localhost:8025](http://localhost:8025)
+`export OMDB_API_KEY="dein_api_schluessel"`
 
----
+Verwendung
 
-## 🏗️ Projektstruktur
-```text
-serientracker/
-├── main.go               # Backend (Go / Fiber/Standard Library)
-├── templates/            # HTML-Templates (Go Templates)
-├── static/               # CSS & JS (Vanilla UI)
-├── fonts/                # PDF-Fonts (DejaVu)
-├── docker-compose.yml    # Infrastruktur (PostgreSQL, App, MailHog)
-└── .env.example          # Template für Einstellungen
-```
+Serien hinzufügen
 
-## 🔒 Sicherheit
-- **Passwort-Hashing**: Gesichert mit bcrypt.
-- **Datenbank**: PostgreSQL 16 (Alpine).
-- **Git-Protection**: Sensible Daten (.env, .db) sind über `.gitignore` geschützt.
+`go run main.go add --titel "Breaking Bad"`
 
----
-*Hinweis: Dies ist ein persönliches Projekt und nicht mit IMDb oder OMDb affiliiert.*
+oder mit IMDb-ID
+
+`go run main.go add --id "tt0903747"`
+
+Folgenstatus aktualisieren
+
+`go run main.go update --id "tt0903747" --episoden 5`
+Serienliste anzeigen
+
+`go run main.go list`
+
+PDF exportieren
+
+`go run main.go export --output meine_serien.pdf`
+
+# Projektstruktur
+
+	serientracker/
+	├── main.go          # Hauptprogramm
+	├── fonts/           # Fonts und Schriftarten
+	├── static/          # Style-Sheet
+	    └── css/
+	        └── style.css
+	├── templates/         # HTML - Pfad
+	    └── index.html
+	    └── mylist.html
+	└── README.md
+
+# Konfiguration
+Die Anwendung verwendet folgende Umgebungsvariablen:
+
+OMDB_API_KEY - OMDb API Schlüssel (erforderlich)
+
+Den Key musst du in der Zeile 71 in der main.go eingeben. 
+Falls das nicht passiert, erhälst du eine Fehlermeldung: "WARNUNG: Bitte trage deinen echten OMDb API-Key in die main.go ein"
+
+
+
+# Beiträge sind willkommen! Bitte erstellt ein Issue oder Pull Request für Verbesserungen.
+
+# Hinweis: Dieser Serientracker ist ein persönliches Projekt und nicht mit IMDb oder OMDb affiliiert.
+
+
+
+
+
+
