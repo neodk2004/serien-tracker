@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel – Serien Tracker</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .admin-hero {
+            height: auto;
+            min-height: 25vh;
+            padding-top: 100px;
+            padding-bottom: 40px;
+            background: linear-gradient(rgba(20, 20, 20, 0.7), rgba(20, 20, 20, 0.95)),
+                linear-gradient(135deg, #222 0%, #000 100%);
+        }
+
+        .admin-container {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 40px;
+        }
+
+        .admin-section {
+            background: var(--netflix-dark-gray);
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .admin-table-container {
+            overflow-x: auto;
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            color: var(--netflix-white);
+        }
+
+        .admin-table th,
+        .admin-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+
+        .admin-table th {
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 1px;
+            color: var(--netflix-light-gray);
+        }
+
+        .user-role {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .role-admin {
+            background: #e50914;
+            color: white;
+        }
+
+        .role-user {
+            background: #333;
+            color: #aaa;
+        }
+
+        .admin-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-link {
+            color: var(--netflix-red);
+            text-decoration: none;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .action-link:hover {
+            text-decoration: underline;
+        }
+
+        .admin-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            align-items: flex-end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--netflix-light-gray);
+        }
+
+        .admin-input {
+            background: #222;
+            border: 1px solid #444;
+            padding: 10px;
+            border-radius: 4px;
+            color: white;
+        }
+
+        .btn-admin {
+            background: var(--netflix-red);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: .2s;
+        }
+
+        .btn-admin:hover {
+            background: #f40612;
+        }
+
+        .danger-zone {
+            border: 1px solid #441111;
+            background: rgba(40, 10, 10, 0.3);
+        }
+
+        .danger-title {
+            color: #ff4444;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        /* Success/Error bubbles */
+        .status-msg {
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .msg-success {
+            background: rgba(0, 255, 0, 0.1);
+            border-left: 4px solid #00ff00;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="main-header">
+        <div class="header-left">
+            <div class="logo"><span class="logo-icon">🎬</span><span class="logo-text">SERIEN TRACKER</span></div>
+        </div>
+
+        <div class="header-center">
+            <nav class="nav-menu">
+                <a href="/?user={{.CurrentUser.Username}}">Startseite</a>
+                <a href="/mylist?user={{.CurrentUser.Username}}">Meine Liste</a>
+                <a href="/stats?user={{.CurrentUser.Username}}">Statistiken</a>
+                <a href="/admin">Admin Panel</a>
+            </nav>
+        </div>
+
+        <div class="header-right">
+            <a href="/logout" class="logout-btn">Logout</a>
+        </div>
+    </header>
+
+    <section class="hero-banner admin-hero">
+        <div class="hero-content">
+            <h1 class="hero-title">System Control Center</h1>
+            <p class="hero-subtitle">Administrative Ebene für <strong>{{.User.Username}}</strong></p>
+        </div>
+    </section>
+
+    <div class="admin-container">
+
+        {{if eq .SearchQuery "added"}}
+        <div class="status-msg msg-success">Nutzer erfolgreich hinzugefügt!</div>
+        {{else if eq .SearchQuery "reset"}}
+        <div class="status-msg msg-success">Passwort erfolgreich zurückgesetzt!</div>
+        {{else if eq .SearchQuery "deleted"}}
+        <div class="status-msg msg-success">Nutzer erfolgreich gelöscht!</div>
+        {{end}}
+
+        <div class="admin-section">
+            <h2 class="section-title">Benutzer-Datenbank</h2>
+            <div class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Rolle</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{range .FullUsers}}
+                        <tr>
+                            <td>{{.ID}}</td>
+                            <td>{{.Username}}</td>
+                            <td>{{.Email}}</td>
+                            <td>
+                                <span class="user-role {{if .IsAdmin}}role-admin{{else}}role-user{{end}}">
+                                    {{if .IsAdmin}}Administrator{{else}}Benutzer{{end}}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="admin-actions">
+                                    <form action="/admin/reset-password" method="POST" style="display:inline;">
+                                        <input type="hidden" name="user_id" value="{{.ID}}">
+                                        <input type="password" name="new_password" placeholder="Neues PW" required
+                                            class="admin-input" style="padding: 5px; width: 100px;">
+                                        <button type="submit" class="action-link"
+                                            style="background:none; border:none;">Reset</button>
+                                    </form>
+                                    {{if ne .ID $.User.ID}}
+                                    <form action="/admin/delete-user" method="POST" style="display:inline;"
+                                        onsubmit="return confirm('Nutzer wirklich löschen? Dies kann nicht rückgängig gemacht werden!');">
+                                        <input type="hidden" name="user_id" value="{{.ID}}">
+                                        <button type="submit" class="action-link"
+                                            style="background:none; border:none; color: #ff4444;">Löschen</button>
+                                    </form>
+                                    {{end}}
+                                </div>
+                            </td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="admin-section">
+            <h2 class="section-title">Neuen Benutzer initialisieren</h2>
+            <form action="/admin/add-user" method="POST" class="admin-form">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" name="username" required class="admin-input">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" required class="admin-input">
+                </div>
+                <div class="form-group">
+                    <label>Initial-Passwort</label>
+                    <input type="password" name="password" required class="admin-input">
+                </div>
+                <div class="form-group" style="flex-direction: row; align-items: center; gap: 10px;">
+                    <input type="checkbox" name="is_admin" id="is_admin">
+                    <label for="is_admin" style="margin-bottom:0;">Administrator-Rechte</label>
+                </div>
+                <button type="submit" class="btn-admin">Nutzer anlegen</button>
+            </form>
+        </div>
+
+    </div>
+
+    <footer class="netflix-footer">
+        <div class="footer-bottom">© 2024 Serien Tracker – Admin Ebene</div>
+    </footer>
+
+</body>
+
+</html>

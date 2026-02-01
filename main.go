@@ -14,6 +14,7 @@ import (
 	"os" // Permanently added for environment variable access
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"context"         // New import for context
@@ -61,7 +62,8 @@ type User struct {
 	PasswordHash string
 	Email        string
 	CreatedAt    time.Time
-	IsAdmin      bool // New field for admin status
+	IsAdmin      bool   // New field for admin status
+	AvatarURL    string // Persistent avatar selection
 }
 
 type OMDbResponse struct {
@@ -89,6 +91,22 @@ type SearchItem struct {
 	Poster string `json:"Poster"`
 }
 
+type UserWithAvatar struct {
+	ID       int
+	Username string
+	Initial  string
+}
+
+type UserStatsData struct {
+	User            string
+	EpisodesWatched int
+	EpisodesTotal   int
+	Progress        int
+	Completed       int
+	WatchTimeHours  int
+	Rank            int
+}
+
 type PageData struct {
 	SeriesList     []Series
 	SearchResults  []SearchItem
@@ -98,11 +116,18 @@ type PageData struct {
 	APIAvailable   bool
 	TotalSeries    int
 	TotalWatched   int
-	SortBy         string
-	Order          string
+	TotalEpisodes  int
+	WatchTimeHours int
+	Rank           int
 
-	User          *User // Current logged-in user object
-	Users         []User
+	SortBy    string
+	Order     string
+	UserStats []UserStatsData
+
+	User          *User            // Current logged-in user object
+	CurrentUser   UserWithAvatar   // Current user info
+	Users         []UserWithAvatar // All users for switcher
+	FullUsers     []User           // Detailed list for admin
 	CurrentUserID int
 }
 
@@ -110,7 +135,6 @@ type PageData struct {
 type contextKey string
 
 const (
-	apiKey   = "fbd55d5e"       // TRAG DEINEN API-KEY HIER EIN
 	dbPath   = "data/series.db" // Updated path for Docker volume persistence
 	dataFile = "series.json"    // Needed for migration
 
@@ -124,7 +148,11 @@ const (
 	defaultDBUser     = "user"
 	defaultDBPassword = "password"
 	defaultDBName     = "seriestracker"
-	sslMode           = "disable" // For local/Docker testing; use "require" or "verify-full" in production
+	defaultSSLMode    = "disable" // For local/Docker testing; use "require" or "verify-full" in production
+)
+
+var (
+	apiKey = os.Getenv("OMDB_API_KEY") // Load API Key from environment variable
 )
 
 var (
@@ -159,9 +187,13 @@ func initDB() {
 	if dbNameEnv == "" {
 		dbNameEnv = defaultDBName
 	}
+	dbSSLModeEnv := os.Getenv("DB_SSLMODE")
+	if dbSSLModeEnv == "" {
+		dbSSLModeEnv = defaultSSLMode
+	}
 
 	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		dbHostEnv, dbPortEnv, dbUserEnv, dbPasswordEnv, dbNameEnv, sslMode)
+		dbHostEnv, dbPortEnv, dbUserEnv, dbPasswordEnv, dbNameEnv, dbSSLModeEnv)
 
 	db, err = sql.Open("postgres", connStr)
 	if err != nil {
@@ -184,12 +216,16 @@ func initDB() {
 			created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 			reset_token TEXT,
 			reset_token_expires_at TIMESTAMPTZ,
-			is_admin BOOLEAN DEFAULT FALSE
+			is_admin BOOLEAN DEFAULT FALSE,
+			avatar_url TEXT
 		);
 	`)
 	if err != nil {
 		log.Fatalf("Failed to create users table: %v", err)
 	}
+
+	// Migrate existing database for avatar_url
+	_, _ = db.Exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT")
 
 	// Create series table
 	_, err = db.Exec(`
@@ -197,7 +233,7 @@ func initDB() {
 			id SERIAL PRIMARY KEY,
 			user_id INTEGER NOT NULL,
 			title VARCHAR(255) NOT NULL,
-			year VARCHAR(4),
+			year VARCHAR(20),
 			imdb_id VARCHAR(20) NOT NULL,
 			episodes_watched INTEGER DEFAULT 0,
 			total_episodes INTEGER DEFAULT 0,
@@ -210,6 +246,9 @@ func initDB() {
 	if err != nil {
 		log.Fatalf("Failed to create series table: %v", err)
 	}
+
+	// Migrate existing database if necessary (increase year column length)
+	_, _ = db.Exec("ALTER TABLE series ALTER COLUMN year TYPE VARCHAR(20)")
 
 	// Perform migration if series.json exists and series table is empty
 	err = migrateSeriesJSONtoDB()
@@ -249,12 +288,30 @@ func main() {
 	}
 
 	// Prüfe API-Key zu Start
+	if apiKey == "" {
+		apiKey = "fbd55d5e" // Fallback to default key if environment variable is not set
+		log.Printf("⚠️  WARNUNG: OMDB_API_KEY Umgebungsvariable nicht gesetzt. Nutze Standard-Key.")
+	}
 	if apiKey == "dein_api_key_hier" || apiKey == "demo" {
-		log.Printf("⚠️  WARNUNG: Bitte trage deinen echten OMDb API-Key in die main.go ein")
+		log.Printf("⚠️  WARNUNG: Bitte trage einen gültigen OMDb API-Key in die OMDB_API_KEY Umgebungsvariable ein.")
 	}
 
 	// Templates laden
-	templates = template.Must(template.ParseGlob("templates/*.html"))
+	funcMap := template.FuncMap{
+		"div": func(a, b int) int {
+			if b == 0 {
+				return 0
+			}
+			return a / b
+		},
+		"percent": func(a, b int) int {
+			if b == 0 {
+				return 0
+			}
+			return (a * 100) / b
+		},
+	}
+	templates = template.Must(template.New("").Funcs(funcMap).ParseGlob("templates/*.html"))
 
 	// HTTP Routes (protected)
 	http.Handle("/", authMiddleware(http.HandlerFunc(indexHandler)))
@@ -266,6 +323,10 @@ func main() {
 	http.Handle("/api/series", authMiddleware(http.HandlerFunc(apiSeriesHandler)))
 	http.Handle("/pdf", authMiddleware(http.HandlerFunc(pdfHandler)))
 	http.Handle("/stats", authMiddleware(http.HandlerFunc(statsHandler)))
+	http.Handle("/admin", authMiddleware(adminMiddleware(http.HandlerFunc(adminHandler))))
+	http.Handle("/admin/add-user", authMiddleware(adminMiddleware(http.HandlerFunc(adminAddUserHandler))))
+	http.Handle("/admin/reset-password", authMiddleware(adminMiddleware(http.HandlerFunc(adminResetPasswordHandler))))
+	http.Handle("/admin/delete-user", authMiddleware(adminMiddleware(http.HandlerFunc(adminDeleteUserHandler))))
 
 	// New Authentication Routes (unprotected)
 	http.HandleFunc("/login", loginHandler)
@@ -348,6 +409,18 @@ func getUserFromContext(ctx context.Context) *User {
 	return user
 }
 
+// adminMiddleware checks if the authenticated user has admin privileges.
+func adminMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := getUserFromContext(r.Context())
+		if user == nil || !user.IsAdmin {
+			http.Error(w, "Zugriff verweigert: Nur für Administratoren.", http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // getUsers returns all registered users from the database.
 func getUsers() ([]User, error) {
 	rows, err := db.Query("SELECT id, username, email, created_at, is_admin FROM users")
@@ -397,6 +470,26 @@ func getUserByID(id int) (*User, error) {
 		return nil, fmt.Errorf("failed to query user by ID: %w", err)
 	}
 	return &user, nil
+}
+
+func getUserWithAvatar(u User) UserWithAvatar {
+	initial := "U"
+	if len(u.Username) > 0 {
+		initial = strings.ToUpper(string(u.Username[0]))
+	}
+	return UserWithAvatar{
+		ID:       u.ID,
+		Username: u.Username,
+		Initial:  initial,
+	}
+}
+
+func getUserInfos(users []User) []UserWithAvatar {
+	infos := make([]UserWithAvatar, len(users))
+	for i, u := range users {
+		infos[i] = getUserWithAvatar(u)
+	}
+	return infos
 }
 
 // The following functions are removed:
@@ -575,9 +668,10 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		SeriesList:    seriesList,
 		APIAvailable:  apiAvailable,
 		TotalSeries:   totalSeries,
-		TotalWatched:  totalCompleted, // Note: totalWatched is now totalCompleted
+		TotalWatched:  totalCompleted,
 		User:          user,
-		Users:         allUsers,
+		CurrentUser:   getUserWithAvatar(*user),
+		Users:         getUserInfos(allUsers),
 		CurrentUserID: user.ID,
 	}
 
@@ -769,7 +863,8 @@ func myListHandler(w http.ResponseWriter, r *http.Request) {
 		SortBy:        sortBy,
 		Order:         order,
 		User:          user,
-		Users:         allUsers,
+		CurrentUser:   getUserWithAvatar(*user),
+		Users:         getUserInfos(allUsers),
 		CurrentUserID: user.ID,
 	}
 
@@ -810,7 +905,8 @@ func addHandler(w http.ResponseWriter, r *http.Request) {
 			TotalSeries:   totalSeries,
 			TotalWatched:  totalCompleted,
 			User:          user,
-			Users:         allUsers,
+			CurrentUser:   getUserWithAvatar(*user),
+			Users:         getUserInfos(allUsers),
 			CurrentUserID: user.ID,
 		}
 		templates.ExecuteTemplate(w, "index.html", data)
@@ -842,7 +938,8 @@ func addHandler(w http.ResponseWriter, r *http.Request) {
 				TotalSeries:   totalSeries,
 				TotalWatched:  totalCompleted,
 				User:          user,
-				Users:         allUsers,
+				CurrentUser:   getUserWithAvatar(*user),
+				Users:         getUserInfos(allUsers),
 				CurrentUserID: user.ID,
 			}
 			templates.ExecuteTemplate(w, "index.html", data)
@@ -871,7 +968,8 @@ func addHandler(w http.ResponseWriter, r *http.Request) {
 			TotalSeries:   totalSeries,
 			TotalWatched:  totalCompleted,
 			User:          user,
-			Users:         allUsers,
+			CurrentUser:   getUserWithAvatar(*user),
+			Users:         getUserInfos(allUsers),
 			CurrentUserID: user.ID,
 		}
 		templates.ExecuteTemplate(w, "index.html", data)
@@ -1007,7 +1105,8 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 			TotalSeries:   totalSeries,
 			TotalWatched:  totalCompleted,
 			User:          user,
-			Users:         allUsers,
+			CurrentUser:   getUserWithAvatar(*user),
+			Users:         getUserInfos(allUsers),
 			CurrentUserID: user.ID,
 		}
 		templates.ExecuteTemplate(w, "index.html", data)
@@ -1032,7 +1131,8 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 		TotalSeries:   totalSeries,
 		TotalWatched:  totalCompleted,
 		User:          user,
-		Users:         allUsers,
+		CurrentUser:   getUserWithAvatar(*user),
+		Users:         getUserInfos(allUsers),
 		CurrentUserID: user.ID,
 	}
 
@@ -1105,7 +1205,8 @@ func seriesHandler(w http.ResponseWriter, r *http.Request) {
 		SortBy:        sortBy,
 		Order:         order,
 		User:          user,
-		Users:         allUsers,
+		CurrentUser:   getUserWithAvatar(*user),
+		Users:         getUserInfos(allUsers),
 		CurrentUserID: user.ID,
 	}
 
@@ -1444,28 +1545,19 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type UserStatsData struct {
-		User            string
-		EpisodesWatched int
-		EpisodesTotal   int
-		Progress        int
-		Completed       int
-	}
-
-	var stats []UserStatsData
-
-	allUsers, err := getUsers() // Get all users from DB
+	allUsers, err := getUsers()
 	if err != nil {
 		log.Printf("Error getting all users for stats: %v", err)
 		http.Error(w, "Error fetching user stats", http.StatusInternalServerError)
 		return
 	}
 
+	var stats []UserStatsData
 	for _, u := range allUsers {
 		seriesList, err := getAllSeriesForUser(u.ID)
 		if err != nil {
 			log.Printf("Error fetching series for user %s: %v", u.Username, err)
-			continue // Skip this user if series cannot be fetched
+			continue
 		}
 
 		episodesWatched := 0
@@ -1491,20 +1583,155 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 			EpisodesTotal:   episodesTotal,
 			Progress:        progress,
 			Completed:       completed,
+			WatchTimeHours:  (episodesWatched * 45) / 60,
 		})
 	}
 
+	// Sort by episodes watched to determine rank
 	sort.Slice(stats, func(i, j int) bool {
 		return stats[i].EpisodesWatched > stats[j].EpisodesWatched
 	})
 
-	tmpl := template.Must(template.ParseFiles("templates/stats.html"))
-	tmpl.Execute(w, map[string]interface{}{
-		"Stats":         stats,
-		"User":          loggedInUser, // Pass the logged-in user object
-		"Users":         allUsers,
-		"CurrentUserID": loggedInUser.ID,
-	})
+	// Assign ranks and find current user data
+	var currentUserStats UserStatsData
+	for i := range stats {
+		stats[i].Rank = i + 1
+		if stats[i].User == loggedInUser.Username {
+			currentUserStats = stats[i]
+		}
+	}
+
+	data := PageData{
+		UserStats:      stats,
+		User:           loggedInUser,
+		CurrentUser:    getUserWithAvatar(*loggedInUser),
+		Users:          getUserInfos(allUsers),
+		CurrentUserID:  loggedInUser.ID,
+		TotalSeries:    currentUserStats.Completed, // Using it for 'Completed' in hero
+		TotalWatched:   currentUserStats.EpisodesWatched,
+		TotalEpisodes:  currentUserStats.EpisodesTotal,
+		WatchTimeHours: currentUserStats.WatchTimeHours,
+		Rank:           currentUserStats.Rank,
+	}
+
+	err = templates.ExecuteTemplate(w, "stats.html", data)
+	if err != nil {
+		log.Printf("Error executing stats template: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+// adminHandler renders the admin dashboard.
+func adminHandler(w http.ResponseWriter, r *http.Request) {
+	loggedInUser := getUserFromContext(r.Context())
+	allUsers, err := getUsers()
+	if err != nil {
+		log.Printf("Error getting all users for admin: %v", err)
+		http.Error(w, "Error fetching user data", http.StatusInternalServerError)
+		return
+	}
+
+	data := PageData{
+		User:          loggedInUser,
+		CurrentUser:   getUserWithAvatar(*loggedInUser),
+		Users:         getUserInfos(allUsers),
+		FullUsers:     allUsers,
+		CurrentUserID: loggedInUser.ID,
+	}
+
+	err = templates.ExecuteTemplate(w, "admin.html", data)
+	if err != nil {
+		log.Printf("Error executing admin template: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// adminAddUserHandler handles manual user creation by an admin.
+func adminAddUserHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	username := r.FormValue("username")
+	password := r.FormValue("password")
+	email := r.FormValue("email")
+	isAdmin := r.FormValue("is_admin") == "on"
+
+	if username == "" || password == "" || email == "" {
+		http.Error(w, "Alle Felder sind Pflichtfelder", http.StatusBadRequest)
+		return
+	}
+
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	_, err := db.Exec("INSERT INTO users (username, password_hash, email, is_admin) VALUES ($1, $2, $3, $4)",
+		username, string(hashedPassword), email, isAdmin)
+
+	if err != nil {
+		log.Printf("Error admin adding user: %v", err)
+		http.Error(w, "Fehler beim Erstellen des Nutzers", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/admin?success=added", http.StatusSeeOther)
+}
+
+// adminResetPasswordHandler allows an admin to force-reset a user's password.
+func adminResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	targetUserIDStr := r.FormValue("user_id")
+	newPassword := r.FormValue("new_password")
+
+	targetUserID, _ := strconv.Atoi(targetUserIDStr)
+	if targetUserID == 0 || newPassword == "" {
+		http.Error(w, "Ungültige Daten", http.StatusBadRequest)
+		return
+	}
+
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	_, err := db.Exec("UPDATE users SET password_hash = $1 WHERE id = $2", string(hashedPassword), targetUserID)
+
+	if err != nil {
+		log.Printf("Error admin resetting password: %v", err)
+		http.Error(w, "Fehler beim Zurücksetzen des Passworts", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/admin?success=reset", http.StatusSeeOther)
+}
+
+// adminDeleteUserHandler handles user deletion by an admin.
+func adminDeleteUserHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	targetUserIDStr := r.FormValue("user_id")
+	targetUserID, _ := strconv.Atoi(targetUserIDStr)
+
+	loggedInUser := getUserFromContext(r.Context())
+	if loggedInUser.ID == targetUserID {
+		http.Error(w, "Man kann sich nicht selbst löschen!", http.StatusBadRequest)
+		return
+	}
+
+	// Delete series first (foreign key should handle this if configured, but let's be safe)
+	db.Exec("DELETE FROM series WHERE user_id = $1", targetUserID)
+	_, err := db.Exec("DELETE FROM users WHERE id = $1", targetUserID)
+
+	if err != nil {
+		log.Printf("Error admin deleting user: %v", err)
+		http.Error(w, "Fehler beim Löschen des Nutzers", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/admin?success=deleted", http.StatusSeeOther)
 }
 
 // loginHandler renders the login form or handles login submission.
@@ -1653,7 +1880,7 @@ func forgotPasswordHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var user User
-		err := db.QueryRow("SELECT id, username, email FROM users WHERE email = ?", email).Scan(&user.ID, &user.Username, &user.Email)
+		err := db.QueryRow("SELECT id, username, email FROM users WHERE email = $1", email).Scan(&user.ID, &user.Username, &user.Email)
 		if err == sql.ErrNoRows {
 			// Do not reveal if email exists for security reasons
 			log.Printf("Password reset requested for non-existent email: %s", email)
@@ -1786,7 +2013,7 @@ func migrateSeriesJSONtoDB() error {
 
 	// Ensure a default user "Dan" exists
 	var danUserID int
-	err = db.QueryRow("SELECT id FROM users WHERE username = ?", "Dan").Scan(&danUserID)
+	err = db.QueryRow("SELECT id FROM users WHERE username = $1", "Dan").Scan(&danUserID)
 	if err == sql.ErrNoRows {
 		// User "Dan" does not exist, create him
 		hashedPassword, hashErr := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost) // Use a temporary default password

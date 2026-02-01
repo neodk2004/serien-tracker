@@ -1,145 +1,143 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meine Liste – Serien Tracker</title>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
+
 <body>
 
-<!-- ======= HEADER ======= -->
-<header class="main-header">
-    <div class="header-left">
-        <div class="logo"><span class="logo-icon">🎬</span><span class="logo-text">SERIEN TRACKER</span></div>
-    </div>
-
-    <div class="header-center">
-        <nav class="nav-menu">
-            <a href="/?user={{.CurrentUser}}">Startseite</a>
-            <a href="/mylist?user={{.CurrentUser}}">Meine Liste</a>
-            <a href="/stats?user={{.CurrentUser}}">Statistiken</a>
-            <a href="/?user={{.CurrentUser}}">Neu hinzugefügt</a>
-        </nav>
-
-        <form action="/search" method="get" class="search-form">
-            <input type="hidden" name="user" value="{{.CurrentUser}}">
-            <input type="text" name="q" placeholder="Serien suchen..." value="{{.SearchQuery}}">
-            <button class="search-btn">🔍</button>
-        </form>
-    </div>
-
-    <div class="header-right">
-        <div class="profile-switcher">
-            {{range .Users}}
-            <a href="/?user={{.}}" class="profile-avatar {{if eq . $.CurrentUser}}active{{end}}">
-                <div class="avatar-img">
-                    {{if eq . "Dan"}}🧔‍♂️{{end}}
-                    {{if eq . "Jessica"}}👩{{end}}
-                    {{if eq . "Bernard"}}🐱{{end}}
-                    {{if eq . "Bianca"}}🐱{{end}}
-                </div>
-            </a>
-            {{end}}
+    <!-- ======= HEADER ======= -->
+    <header class="main-header">
+        <div class="header-left">
+            <div class="logo"><span class="logo-icon">🎬</span><span class="logo-text">SERIEN TRACKER</span></div>
         </div>
-    </div>
-</header>
 
+        <div class="header-center">
+            <nav class="nav-menu">
+                <a href="/?user={{.CurrentUser.Username}}">Startseite</a>
+                <a href="/mylist?user={{.CurrentUser.Username}}">Meine Liste</a>
+                <a href="/stats?user={{.CurrentUser.Username}}">Statistiken</a>
+                <a href="/?user={{.CurrentUser.Username}}">Neu hinzugefügt</a>
+                {{if .User.IsAdmin}}
+                <a href="/admin" style="color: var(--netflix-red); font-weight: bold;">Admin Panel</a>
+                {{end}}
+            </nav>
 
-<!-- ======= HERO ======= -->
-<section class="hero-banner">
-    <div class="hero-content">
-        <h1 class="hero-title">Serien von {{.CurrentUser}}</h1>
-        <p class="hero-subtitle">Deine persönliche Watchlist</p>
-
-        <div class="hero-stats">
-            <div class="stat">
-                <span class="stat-number">{{.TotalSeries}}</span>
-                <span class="stat-label">Serien</span>
-            </div>
-            <div class="stat">
-                <span class="stat-number">{{.TotalWatched}}</span>
-                <span class="stat-label">Abgeschlossen</span>
-            </div>
+            <form action="/search" method="get" class="search-form">
+                <input type="hidden" name="user" value="{{.CurrentUser.Username}}">
+                <input type="text" name="q" placeholder="Serien suchen..." value="{{.SearchQuery}}">
+                <button class="search-btn">🔍</button>
+            </form>
         </div>
-    </div>
-</section>
 
-
-<!-- ======= PDF BUTTON ======= -->
-<section class="quick-add-section">
-    <a href="/pdf" class="netflix-btn primary">📄 PDF herunterladen</a>
-</section>
-
-
-<!-- ======= POSTER GRID ======= -->
-<section class="poster-view-section">
-    <div class="poster-grid">
-        {{range .SeriesList}}
-        <div class="poster-item">
-
-            <div class="poster-container">
-                {{if .CoverURL}}
-                <img class="poster-image" src="{{.CoverURL}}" alt="{{.Title}}">
-                {{else}}
-                <div class="poster-image">?</div>
+        <div class="header-right">
+            <div class="profile-switcher">
+                {{range .Users}}
+                <a href="/?user={{.Username}}"
+                    class="profile-avatar {{if eq .Username $.CurrentUser.Username}}active{{end}}"
+                    title="{{.Username}}">
+                    <div class="avatar-img">
+                        {{.Initial}}
+                    </div>
+                </a>
                 {{end}}
             </div>
+            <a href="/logout" class="logout-btn">Logout</a>
+        </div>
+    </header>
 
-            <div class="poster-overlay">
-                <div>
-                    <div class="overlay-title">{{.Title}}</div>
-                    <div class="overlay-year">{{.Year}}</div>
 
-                    <div class="overlay-actions">
-                        <!-- UPDATE FORM -->
-                        <form method="post" action="/update" class="episode-controls-overlay">
-                            <input type="hidden" name="id" value="{{.ID}}">
+    <!-- ======= HERO ======= -->
+    <section class="hero-banner">
+        <div class="hero-content">
+            <h1 class="hero-title">Serien von {{.CurrentUser.Username}}</h1>
+            <p class="hero-subtitle">Deine persönliche Watchlist</p>
 
-                            <div class="episode-stepper">
-                                <button
-                                    type="button"
-                                    class="stepper-btn"
-                                    onclick="this.parentNode.querySelector('.episode-input-small').stepDown()">
-                                    −
-                                </button>
-
-                                <input
-                                    type="number"
-                                    name="episodes"
-                                    class="episode-input-small"
-                                    value="{{.EpisodesWatched}}"
-                                    min="0">
-
-                                <button
-                                    type="button"
-                                    class="stepper-btn"
-                                    onclick="this.parentNode.querySelector('.episode-input-small').stepUp()">
-                                    +
-                                </button>
-                            </div>
-
-                            <button type="submit" class="btn-save">Speichern</button>
-                        </form>
-
-                        <!-- DELETE FORM -->
-                        <form method="post" action="/delete" class="delete-form-overlay">
-                            <input type="hidden" name="id" value="{{.ID}}">
-                            <button type="submit" class="btn-delete">Löschen</button>
-                        </form>
-                    </div>
+            <div class="hero-stats">
+                <div class="stat">
+                    <span class="stat-number">{{.TotalSeries}}</span>
+                    <span class="stat-label">Serien</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">{{.TotalWatched}}</span>
+                    <span class="stat-label">Abgeschlossen</span>
                 </div>
             </div>
-
         </div>
-        {{end}}
-    </div>
-</section>
+    </section>
 
 
-<footer class="netflix-footer">
-    <div class="footer-bottom">© 2024 Serien Tracker</div>
-</footer>
+    <!-- ======= PDF BUTTON ======= -->
+    <section class="quick-add-section">
+        <a href="/pdf" class="netflix-btn primary">📄 PDF herunterladen</a>
+    </section>
+
+
+    <!-- ======= POSTER GRID ======= -->
+    <section class="poster-view-section">
+        <div class="poster-grid">
+            {{range .SeriesList}}
+            <div class="poster-item">
+
+                <div class="poster-container">
+                    {{if .CoverURL}}
+                    <img class="poster-image" src="{{.CoverURL}}" alt="{{.Title}}">
+                    {{else}}
+                    <div class="poster-image">?</div>
+                    {{end}}
+                </div>
+
+                <div class="poster-overlay">
+                    <div>
+                        <div class="overlay-title">{{.Title}}</div>
+                        <div class="overlay-year">{{.Year}}</div>
+
+                        <div class="overlay-actions">
+                            <!-- UPDATE FORM -->
+                            <form method="post" action="/update" class="episode-controls-overlay">
+                                <input type="hidden" name="id" value="{{.ID}}">
+
+                                <div class="episode-stepper">
+                                    <button type="button" class="stepper-btn"
+                                        onclick="this.parentNode.querySelector('.episode-input-small').stepDown()">
+                                        −
+                                    </button>
+
+                                    <input type="number" name="episodes" class="episode-input-small"
+                                        value="{{.EpisodesWatched}}" min="0">
+
+                                    <button type="button" class="stepper-btn"
+                                        onclick="this.parentNode.querySelector('.episode-input-small').stepUp()">
+                                        +
+                                    </button>
+                                </div>
+
+                                <button type="submit" class="btn-save">Speichern</button>
+                            </form>
+
+                            <!-- DELETE FORM -->
+                            <form method="post" action="/delete" class="delete-form-overlay">
+                                <input type="hidden" name="id" value="{{.ID}}">
+                                <button type="submit" class="btn-delete">Löschen</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            {{end}}
+        </div>
+    </section>
+
+
+    <footer class="netflix-footer">
+        <div class="footer-bottom">© 2024 Serien Tracker</div>
+    </footer>
 
 </body>
+
 </html>

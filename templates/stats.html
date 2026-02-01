@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,75 +10,309 @@
 
 <body>
 
-<header class="main-header">
-    <div class="header-left">
-        <div class="logo"><span class="logo-icon">🎬</span><span class="logo-text">SERIEN TRACKER</span></div>
-    </div>
+    <header class="main-header">
+        <div class="header-left">
+            <div class="logo"><span class="logo-icon">🎬</span><span class="logo-text">SERIEN TRACKER</span></div>
+        </div>
 
-    <div class="header-center">
-        <nav class="nav-menu">
-            <a href="/?user={{.CurrentUser}}">Startseite</a>
-            <a href="/mylist?user={{.CurrentUser}}">Meine Liste</a>
-            <a href="/stats?user={{.CurrentUser}}">Statistiken</a>
-            <a href="/?user={{.CurrentUser}}">Neu hinzugefügt</a>
-        </nav>
+        <div class="header-center">
+            <nav class="nav-menu">
+                <a href="/?user={{.CurrentUser.Username}}">Startseite</a>
+                <a href="/mylist?user={{.CurrentUser.Username}}">Meine Liste</a>
+                <a href="/stats?user={{.CurrentUser.Username}}">Statistiken</a>
+                <a href="/?user={{.CurrentUser.Username}}">Neu hinzugefügt</a>
+                {{if .User.IsAdmin}}
+                <a href="/admin" style="color: var(--netflix-red); font-weight: bold;">Admin Panel</a>
+                {{end}}
+            </nav>
 
-        <form action="/search" method="get" class="search-form">
-            <input type="hidden" name="user" value="{{.CurrentUser}}">
-            <input type="text" name="q" placeholder="Serien suchen..." value="{{.SearchQuery}}">
-            <button class="search-btn">🔍</button>
-        </form>
-    </div>
+            <form action="/search" method="get" class="search-form">
+                <input type="hidden" name="user" value="{{.CurrentUser.Username}}">
+                <input type="text" name="q" placeholder="Serien suchen..." value="{{.SearchQuery}}">
+                <button class="search-btn">🔍</button>
+            </form>
+        </div>
 
-    <div class="header-right">
-        <div class="profile-switcher">
-            {{range .Users}}
-            <a href="/?user={{.}}" class="profile-avatar {{if eq . $.CurrentUser}}active{{end}}">
-                <div class="avatar-img">
-                    {{if eq . "Dan"}}🧔‍♂️{{end}}
-                    {{if eq . "Jessica"}}👩{{end}}
-                    {{if eq . "Bernard"}}🐱{{end}}
-                    {{if eq . "Bianca"}}🐱{{end}}
+        <div class="header-right">
+            <div class="profile-switcher">
+                {{range .Users}}
+                <a href="/?user={{.Username}}"
+                    class="profile-avatar {{if eq .Username $.CurrentUser.Username}}active{{end}}"
+                    title="{{.Username}}">
+                    <div class="avatar-img">
+                        {{.Initial}}
+                    </div>
+                </a>
+                {{end}}
+            </div>
+            <a href="/logout" class="logout-btn">Logout</a>
+        </div>
+    </header>
+
+
+    <section class="hero-banner stats-hero">
+        <div class="hero-content">
+            <h1 class="hero-title">Nerd Dashboard</h1>
+            <p class="hero-subtitle">Messergebnisse für <strong>{{.CurrentUser.Username}}</strong></p>
+
+            <div class="hero-stats stats-grid">
+                <div class="stat-card">
+                    <span class="card-icon">🏆</span>
+                    <div class="card-info">
+                        <span class="stat-number">#{{.Rank}}</span>
+                        <span class="stat-label">Globaler Rang</span>
+                    </div>
                 </div>
-            </a>
-            {{end}}
+                <div class="stat-card">
+                    <span class="card-icon">⏳</span>
+                    <div class="card-info">
+                        <span class="stat-number">{{.WatchTimeHours}}h</span>
+                        <span class="stat-label">Binge-Zeit</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <span class="card-icon">✅</span>
+                    <div class="card-info">
+                        <span class="stat-number">{{.TotalSeries}}</span>
+                        <span class="stat-label">Abgeschlossen</span>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-</header>
+    </section>
 
+    <section class="quick-add-section dashboard-container">
 
-<section class="hero-banner">
-    <div class="hero-content">
-        <h1 class="hero-title">Statistiken von {{.CurrentUser}}</h1>
-        <p class="hero-subtitle">Dein Streaming-Profil</p>
+        <div class="dashboard-grid">
+            <!-- Left Column: Detailed Stats -->
+            <div class="dashboard-main">
+                <h2 class="section-title">Nerd-Metriken</h2>
+                <div class="nerd-facts">
+                    <div class="fact-item">
+                        <h3>Deep Dive: Watch Time</h3>
+                        <p>Du hast ca. <strong>{{.WatchTimeHours}} Stunden</strong> mit Serien verbracht.</p>
+                        <p class="nerd-note">Das sind etwa <strong>{{div .WatchTimeHours 24}} Tage</strong> am Stück
+                            oder genug Zeit, um die <i>Herr der Ringe</i> Extended Edition ca. <strong>{{div
+                                .WatchTimeHours 12}} Mal</strong> zu sehen.</p>
+                    </div>
 
-        <div class="hero-stats">
-            <div class="stat"><span class="stat-number">{{.TotalSeries}}</span><span class="stat-label">Serien</span></div>
-            <div class="stat"><span class="stat-number">{{.CompletedCount}}</span><span class="stat-label">Abgeschlossen</span></div>
+                    <div class="fact-item">
+                        <h3>Episoden-Check</h3>
+                        <p>Insgesamt hast du <strong>{{.TotalWatched}} Episoden</strong> konsumiert.</p>
+                        <div class="progress-container-large">
+                            <div class="progress-bar-large" style="width: {{percent .TotalWatched .TotalEpisodes}}%;">
+                            </div>
+                            <span class="progress-text">{{percent .TotalWatched .TotalEpisodes}}% aller verfügbaren
+                                Folgen ({{.TotalEpisodes}}) gesehen.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Leaderboard -->
+            <div class="dashboard-sidebar">
+                <h2 class="section-title">Globales Leaderboard</h2>
+                <div class="leaderboard">
+                    {{range .UserStats}}
+                    <div class="leader-item {{if eq .User $.CurrentUser.Username}}is-current{{end}}">
+                        <div class="leader-info">
+                            <span class="leader-rank">#{{.Rank}}</span>
+                            <span class="leader-name">{{.User}}</span>
+                            <span class="leader-score">{{.EpisodesWatched}} EP</span>
+                        </div>
+                        <div class="leader-bar-bg">
+                            <div class="leader-bar" style="width: {{.Progress}}%;"></div>
+                        </div>
+                    </div>
+                    {{end}}
+                </div>
+            </div>
         </div>
-    </div>
-</section>
+
+    </section>
+
+    <style>
+        .stats-hero {
+            height: auto;
+            min-height: 45vh;
+            padding-top: 100px;
+            /* Header height offset */
+            padding-bottom: 80px;
+            background: linear-gradient(rgba(20, 20, 20, 0.6), rgba(20, 20, 20, 0.9)),
+                linear-gradient(135deg, #e50914 0%, #000 100%);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            border-bottom: 3px solid transparent;
+            transition: .3s;
+        }
+
+        .stat-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-5px);
+            border-color: var(--netflix-red);
+        }
+
+        .card-icon {
+            font-size: 32px;
+        }
+
+        .card-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dashboard-container {
+            max-width: 1600px;
+            margin: 20px auto 40px;
+            /* Removed negative margin */
+            padding: 0 40px;
+            position: relative;
+            z-index: 100;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 40px;
+        }
+
+        .dashboard-main,
+        .dashboard-sidebar {
+            background: var(--netflix-dark-gray);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .fact-item {
+            margin-bottom: 40px;
+        }
+
+        .fact-item h3 {
+            color: var(--netflix-light-gray);
+            font-size: 1.1em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+
+        .nerd-note {
+            color: var(--netflix-light-gray);
+            font-style: italic;
+            margin-top: 10px;
+            font-size: 0.95em;
+        }
+
+        .progress-container-large {
+            background: #333;
+            height: 30px;
+            border-radius: 15px;
+            margin-top: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar-large {
+            background: var(--netflix-red);
+            height: 100%;
+            border-radius: 15px;
+            transition: width 1s ease-out;
+        }
+
+        .progress-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            top: 0;
+            line-height: 30px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        .leaderboard {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .leader-item {
+            padding: 10px;
+            border-radius: 6px;
+            transition: .2s;
+        }
+
+        .leader-item.is-current {
+            background: rgba(229, 9, 20, 0.1);
+            border: 1px solid rgba(229, 9, 20, 0.3);
+        }
+
+        .leader-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .leader-rank {
+            font-weight: bold;
+            color: var(--netflix-red);
+            width: 30px;
+        }
+
+        .leader-name {
+            flex-grow: 1;
+            font-weight: bold;
+        }
+
+        .leader-score {
+            color: var(--netflix-light-gray);
+        }
+
+        .leader-bar-bg {
+            background: #222;
+            height: 4px;
+            border-radius: 2px;
+        }
+
+        .leader-bar {
+            background: var(--netflix-red);
+            height: 100%;
+            border-radius: 2px;
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-container {
+                margin-top: 20px;
+            }
+        }
+    </style>
 
 
-<section class="quick-add-section">
-
-    <h2 class="section-title">Abschluss-Ranking</h2>
-
-    {{range .UserStats}}
-    <div style="margin:10px 0;">
-        <strong>{{.Name}}</strong> – {{.Completed}} Serien
-        <div style="background:#333;height:6px;border-radius:4px;margin-top:4px;">
-            <div style="background:#e50914;height:6px;width:{{.Percent}}%;border-radius:4px;"></div>
-        </div>
-    </div>
-    {{end}}
-
-</section>
-
-
-<footer class="netflix-footer">
-    <div class="footer-bottom">© 2024 Serien Tracker</div>
-</footer>
+    <footer class="netflix-footer">
+        <div class="footer-bottom">© 2024 Serien Tracker</div>
+    </footer>
 
 </body>
+
 </html>

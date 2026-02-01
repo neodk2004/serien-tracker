@@ -21,7 +21,7 @@
 }
 
 body {
-    font-family: 'Netflix Sans','Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji','Segoe UI Symbol','Helvetica Neue',Helvetica,Arial,sans-serif;
+    font-family: 'Netflix Sans', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', 'Segoe UI Symbol', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     background-color: var(--netflix-black);
     color: var(--netflix-white);
     line-height: 1.4;
@@ -49,11 +49,13 @@ body {
     align-items: center;
     gap: 8px;
 }
+
 .logo-text {
     color: var(--netflix-red);
     font-size: 24px;
     font-weight: bold;
 }
+
 .logo-icon {
     font-size: 28px;
 }
@@ -70,12 +72,14 @@ body {
     display: flex;
     gap: 20px;
 }
+
 .nav-menu a {
     color: #eee;
     text-decoration: none;
     font-size: 17px;
     transition: .2s;
 }
+
 .nav-menu a:hover {
     color: var(--netflix-red);
 }
@@ -85,13 +89,15 @@ body {
     justify-content: center;
     width: 100%;
 }
+
 .search-form {
     display: flex;
     gap: 5px;
 }
+
 .search-form input {
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 4px;
     padding: 8px 12px;
     color: var(--netflix-white);
@@ -99,12 +105,14 @@ body {
     width: 200px;
     transition: all 0.3s;
 }
+
 .search-form input:focus {
     outline: none;
-    background: rgba(255,255,255,0.15);
+    background: rgba(255, 255, 255, 0.15);
     border-color: var(--netflix-white);
     width: 250px;
 }
+
 .search-btn {
     background: var(--netflix-red);
     border: none;
@@ -114,6 +122,7 @@ body {
     cursor: pointer;
     transition: .2s;
 }
+
 .search-btn:hover {
     background: #f40612;
 }
@@ -122,31 +131,52 @@ body {
 .header-right {
     display: flex;
     align-items: center;
+    gap: 20px;
 }
+
 .profile-switcher {
     display: flex;
     gap: 12px;
 }
 
 .profile-avatar .avatar-img {
-    width: 48px;
-    height: 48px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    background: #141414;
-    border: 3px solid #333;
+    background: var(--netflix-red);
+    color: var(--netflix-white);
+    font-weight: bold;
+    font-size: 18px;
+    border: 2px solid transparent;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 28px;
-    transition: .2s;
+    transition: transform .2s, border-color .2s;
+    text-decoration: none;
 }
 
 .profile-avatar.active .avatar-img {
-    border-color: var(--netflix-red);
+    border-color: var(--netflix-white);
 }
+
 .profile-avatar:hover .avatar-img {
     transform: scale(1.1);
-    border-color: var(--netflix-red);
+}
+
+.logout-btn {
+    background: transparent;
+    border: 1px solid var(--netflix-white);
+    color: var(--netflix-white);
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    text-decoration: none;
+    transition: .2s;
+}
+
+.logout-btn:hover {
+    background: var(--netflix-white);
+    color: var(--netflix-black);
 }
 
 /* =============================== */
@@ -161,29 +191,35 @@ body {
     position: relative;
     margin-top: 0px;
 }
+
 .hero-content {
     max-width: 1600px;
     margin: 0 auto;
     padding: 0 40px;
 }
+
 .hero-title {
     font-size: 3.2em;
     font-weight: 900;
     margin-bottom: 20px;
 }
+
 .hero-subtitle {
     font-size: 1.4em;
     color: var(--netflix-light-gray);
 }
+
 .hero-stats {
     display: flex;
     gap: 40px;
     margin-top: 30px;
 }
+
 .stat-number {
     font-size: 2.5em;
     font-weight: bold;
 }
+
 .stat-label {
     text-transform: uppercase;
     font-size: .9em;
@@ -196,7 +232,7 @@ body {
 
 .poster-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px,1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 25px;
     margin: 40px auto;
     padding: 0 40px;
@@ -211,10 +247,12 @@ body {
     position: relative;
     aspect-ratio: 2/3;
 }
+
 .poster-item:hover {
     transform: scale(1.05);
     z-index: 50;
 }
+
 .poster-image {
     width: 100%;
     height: 100%;
@@ -225,13 +263,14 @@ body {
 .poster-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg,transparent 0%,rgba(0,0,0,0.9) 100%);
+    background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.9) 100%);
     opacity: 0;
     transition: .3s;
     display: flex;
     align-items: flex-end;
     padding: 20px;
 }
+
 .poster-item:hover .poster-overlay {
     opacity: 1;
 }
@@ -246,19 +285,22 @@ body {
     margin-top: 80px;
     border-top: 1px solid var(--netflix-gray);
 }
+
 .footer-content {
     max-width: 1600px;
     margin: 0 auto;
     padding: 0 40px;
     display: grid;
-    grid-template-columns: repeat(auto-fit,minmax(250px,1fr));
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
 }
+
 .footer-bottom {
     text-align: center;
     padding-top: 20px;
     font-size: .8em;
     color: var(--netflix-light-gray);
 }
+
 .episode-stepper {
     display: flex;
     align-items: center;
@@ -312,6 +354,7 @@ body {
     background: #12b368;
     transform: translateY(-2px);
 }
+
 .btn-delete {
     background: rgba(229, 9, 20, 0.15);
     color: #e50914;
@@ -328,4 +371,166 @@ body {
 .btn-delete:hover {
     background: rgba(229, 9, 20, 0.35);
     transform: translateY(-2px);
+}
+
+/* =============================== */
+/*       RESPONSIVE DESIGN         */
+/* =============================== */
+
+/* ---------- Tablet (max-width: 1024px) ---------- */
+@media screen and (max-width: 1024px) {
+    .hero-banner {
+        height: 50vh;
+    }
+
+    .hero-title {
+        font-size: 2.5em;
+    }
+
+    .poster-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 20px;
+        padding: 0 25px;
+    }
+}
+
+/* ---------- Mobile (max-width: 768px) ---------- */
+@media screen and (max-width: 768px) {
+    .main-header {
+        flex-direction: column;
+        padding: 15px;
+        gap: 15px;
+    }
+
+    .header-center {
+        width: 100%;
+    }
+
+    .nav-menu {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px 15px;
+    }
+
+    .nav-menu a {
+        font-size: 15px;
+    }
+
+    .search-box {
+        width: 100%;
+    }
+
+    .search-form {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .search-form input {
+        flex-grow: 1;
+        width: auto;
+        min-width: 0;
+    }
+
+    .search-form input:focus {
+        width: auto;
+        flex-grow: 1;
+    }
+
+    .header-right {
+        width: 100%;
+        justify-content: center;
+        border-top: 1px solid #222;
+        padding-top: 10px;
+    }
+
+    .hero-banner {
+        height: auto;
+        min-height: 40vh;
+        padding: 60px 0;
+    }
+
+    .hero-content {
+        padding: 0 20px;
+        text-align: center;
+    }
+
+    .hero-title {
+        font-size: 1.8em;
+    }
+
+    .hero-subtitle {
+        font-size: 1.1em;
+    }
+
+    .hero-stats {
+        justify-content: center;
+        gap: 25px;
+        flex-wrap: wrap;
+    }
+
+    .stat-number {
+        font-size: 1.8em;
+    }
+
+    .poster-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 15px;
+        padding: 0 15px;
+        margin: 25px auto;
+    }
+
+    .poster-overlay {
+        padding: 10px;
+    }
+
+    .overlay-title {
+        font-size: 0.9em;
+    }
+
+    .overlay-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .episode-stepper {
+        width: 100%;
+    }
+
+    .btn-save,
+    .btn-delete {
+        width: 100%;
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    .footer-content {
+        padding: 0 20px;
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 20px;
+    }
+
+    /* Auth Forms Responsiveness */
+    .login-container,
+    .register-container,
+    .auth-container {
+        padding: 30px 20px;
+        margin: 20px;
+        max-width: calc(100% - 40px);
+    }
+}
+
+/* ---------- Small Mobile (max-width: 480px) ---------- */
+@media screen and (max-width: 480px) {
+    .header-left .logo {
+        justify-content: center;
+    }
+
+    .logo-text {
+        font-size: 20px;
+    }
+
+    .hero-title {
+        font-size: 1.5em;
+    }
 }

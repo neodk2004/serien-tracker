@@ -20,12 +20,13 @@ Ein robuster und effizienter Serientracker als Webanwendung, geschrieben in Go. 
 *   **Go:** Version 1.22 oder höher. (Nicht direkt für die Docker-Ausführung, aber für Entwicklung wichtig)
 *   **Docker & Docker Compose:** Erforderlich für die lokale Entwicklung und den Betrieb der Anwendung (inkl. PostgreSQL und MailHog).
 *   **OMDb API-Schlüssel:** Registriere dich kostenlos unter [https://www.omdbapi.com/apikey.aspx](https://www.omdbapi.com/apikey.aspx)
+*   **Umgebungsvariablen:** Die Anwendung wird primär über Umgebungsvariablen konfiguriert (siehe `.env.example`).
 
 ## Installation & Ausführung (Endbenutzerfreundliches Skript)
 
 Dieses "Installationsskript" führt die notwendigen Schritte aus, um die Anwendung über Docker Compose auf Ihrem System einzurichten und zu starten. Es wird überprüft, ob Docker und Docker Compose installiert sind, das Repository geklont und die Anwendung gestartet.
 
-**Wichtig:** Der OMDb API-Schlüssel ist aktuell in der Datei `main.go` hardcodiert (`fbd55d5e`). Es wird **DRINGEND** empfohlen, diesen Schlüssel in der `main.go` zu aktualisieren, bevor die Anwendung gestartet wird, falls der Standard-Schlüssel nicht mehr funktioniert oder Sie Ihren eigenen verwenden möchten. Suchen Sie in `main.go` nach `apiKey = "fbd55d5e"`.
+**Wichtig:** Der OMDb API-Schlüssel kann über die Umgebungsvariable `OMDB_API_KEY` oder in einer `.env` Datei gesetzt werden. Falls keine Variable gesetzt ist, wird ein Standard-Schlüssel verwendet, der jedoch limitiert sein kann.
 
 ```bash
 #!/bin/bash
@@ -69,13 +70,10 @@ else
 fi
 
  echo ""
- echo "--- WICHTIGER HINWEIS ZUM OMDb API-SCHLÜSSEL ---"
- echo "Der OMDb API-Schlüssel ist aktuell in der Datei main.go hardcodiert."
- echo "Es wird DRINGEND empfohlen, diesen Schlüssel in der main.go zu aktualisieren,"
- echo "bevor die Anwendung gestartet wird, falls der Standard-Schlüssel"
- echo "nicht mehr funktioniert oder Sie Ihren eigenen verwenden möchten."
- echo "Suchen Sie in main.go nach 'apiKey = \"fbd55d5e\"'."
- echo "Drücken Sie ENTER, um fortzufahren oder STRG+C, um abzubrechen und die Datei zu bearbeiten..."
+ echo "--- HINWEIS ZUM OMDb API-SCHLÜSSEL ---"
+ echo "Der OMDb API-Schlüssel sollte idealerweise über eine .env Datei oder"
+ echo "Umgebungsvariable gesetzt werden. Siehe .env.example für Details."
+ echo "Drücken Sie ENTER, um fortzufahren oder STRG+C, um abzubrechen..."
  read -r
 
 # --- 4. Docker Compose starten ---
