@@ -1,1 +1,23 @@
+# Binaries
+/series-tracker
+/series-tracker.exe
+/main
+
+# Environment files (MUST IGNORE FOR GITHUB)
+.env
+.env.local
+
+# Databases (Local data)
+/*.db
+/series.json
+
+# IDEs
+.vscode/
+.idea/
+
+# OS Metadata
+.DS_Store
+Thumbs.db
+
+# Docker
 /target

@@ -1,0 +1,20 @@
+# Avoid copying secret environment files into the image
+.env
+.env.local
+
+# Avoid copying local databases/data into the image
+*.db
+series.json
+
+# Git
+.git
+.gitignore
+
+# Compiled binaries
+series-tracker
+series-tracker.exe
+
+# Documentation
+KI.md
+README.md
+task.md
