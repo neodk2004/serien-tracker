@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bibliothek von {{.ViewedUser.Username}} – Serien Tracker</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+
+    <!-- ======= HEADER ======= -->
+    <header class="main-header">
+        <div class="header-left">
+            <div class="logo"><span class="logo-icon">🎬</span><span class="logo-text">SERIEN TRACKER</span></div>
+        </div>
+
+        <div class="header-center">
+            <nav class="nav-menu">
+                <a href="/">Startseite</a>
+                <a href="/mylist">Meine Liste</a>
+                <a href="/stats">Statistiken</a>
+                {{if .User.IsAdmin}}
+                <a href="/admin" style="color: var(--netflix-red); font-weight: bold;">Admin Panel</a>
+                {{end}}
+            </nav>
+        </div>
+
+        <div class="header-right">
+            <div class="profile-switcher">
+                {{range .Users}}
+                <a href="/explore?id={{.ID}}" class="profile-avatar {{if eq .ID $.ViewedUser.ID}}active{{end}}"
+                    title="{{.Username}}">
+                    <div class="avatar-img">
+                        {{.Initial}}
+                    </div>
+                </a>
+                {{end}}
+            </div>
+            <a href="/logout" class="logout-btn">Logout</a>
+        </div>
+    </header>
+
+
+    <!-- ======= HERO ======= -->
+    <section class="hero-banner">
+        <div class="hero-content">
+            <h1 class="hero-title">Bibliothek von {{.ViewedUser.Username}}</h1>
+            <p class="hero-subtitle">Entdecke, was andere schauen</p>
+
+            <div class="hero-stats">
+                <div class="stat">
+                    <span class="stat-number">{{len .SeriesList}}</span>
+                    <span class="stat-label">Serien</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- ======= POSTER GRID ======= -->
+    <section class="poster-view-section">
+        <div class="poster-grid">
+            {{range .SeriesList}}
+            <div class="poster-item">
+
+                <div class="poster-container" onclick="window.location.href='/series?id={{.IMDBID}}'"
+                    style="cursor: pointer;">
+                    {{if .CoverURL}}
+                    <img class="poster-image" src="{{.CoverURL}}" alt="{{.Title}}">
+                    {{else}}
+                    <div class="poster-image">?</div>
+                    {{end}}
+
+                    {{if gt .Rating 0}}
+                    <div class="poster-rating">
+                        {{range $i := (seq 1 .Rating)}}★{{end}}
+                    </div>
+                    {{end}}
+
+                    {{if index $.IsMutual .IMDBID}}
+                    <div class="mutual-badge" title="Diese Serie schaust du auch!">
+                        <span class="badge-icon">👥</span>
+                        <span class="badge-text">Shared</span>
+                    </div>
+                    {{end}}
+                </div>
+
+                <div class="poster-overlay">
+                    <div>
+                        <div class="overlay-title">{{.Title}}</div>
+                        <div class="overlay-year">{{.Year}}</div>
+                        <div class="overlay-status">{{.Status}} ({{.EpisodesWatched}}/{{.TotalEpisodes}})</div>
+                    </div>
+                </div>
+
+            </div>
+            {{else}}
+            <div class="empty-state">
+                <p>Dieser User hat noch keine Serien hinzugefügt.</p>
+            </div>
+            {{end}}
+        </div>
+    </section>
+
+
+    <footer class="netflix-footer">
+        <div class="footer-bottom">© 2024 Serien Tracker</div>
+    </footer>
+
+</body>
+
+</html>

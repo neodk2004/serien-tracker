@@ -36,13 +36,15 @@
         <div class="header-right">
             <div class="profile-switcher">
                 {{range .Users}}
-                <a href="/?user={{.Username}}"
-                    class="profile-avatar {{if eq .Username $.CurrentUser.Username}}active{{end}}"
-                    title="{{.Username}}">
-                    <div class="avatar-img">
-                        {{.Initial}}
-                    </div>
+                {{if eq .ID $.CurrentUser.ID}}
+                <a href="/" class="profile-avatar active" title="Das bist du!">
+                    <div class="avatar-img">{{.Initial}}</div>
                 </a>
+                {{else}}
+                <a href="/explore?id={{.ID}}" class="profile-avatar" title="Bibliothek von {{.Username}} ansehen">
+                    <div class="avatar-img">{{.Initial}}</div>
+                </a>
+                {{end}}
                 {{end}}
             </div>
             <a href="/logout" class="logout-btn">Logout</a>
@@ -117,7 +119,13 @@
                     <div class="leader-item {{if eq .User $.CurrentUser.Username}}is-current{{end}}">
                         <div class="leader-info">
                             <span class="leader-rank">#{{.Rank}}</span>
-                            <span class="leader-name">{{.User}}</span>
+                            <span class="leader-name">
+                                {{if eq .User $.CurrentUser.Username}}
+                                {{.User}}
+                                {{else}}
+                                <a href="/explore?id={{.UserID}}" class="leader-link">{{.User}}</a>
+                                {{end}}
+                            </span>
                             <span class="leader-score">{{.EpisodesWatched}} EP</span>
                         </div>
                         <div class="leader-bar-bg">

@@ -40,6 +40,17 @@ type Series struct {
 	Progress        int
 	CoverURL        string `db:"cover_url"`
 	UserID          int    // Foreign key to users table
+	Rating          int    // 1-5 stars
+}
+
+type Comment struct {
+	ID        int
+	UserID    int
+	Username  string // For displaying who commented
+	Initial   string // For avatar
+	IMDBID    string
+	Content   string
+	CreatedAt time.Time
 }
 
 // OldSeries struct for JSON migration
@@ -98,6 +109,7 @@ type UserWithAvatar struct {
 }
 
 type UserStatsData struct {
+	UserID          int
 	User            string
 	EpisodesWatched int
 	EpisodesTotal   int
@@ -129,6 +141,12 @@ type PageData struct {
 	Users         []UserWithAvatar // All users for switcher
 	FullUsers     []User           // Detailed list for admin
 	CurrentUserID int
+
+	// Social Features
+	ViewedUser   *User           // User whose list is being viewed
+	IsMutual     map[string]bool // map[IMDBID]true for shared series
+	ActiveSeries *Series         // For detail page
+	Comments     []Comment       // Comments for the active series
 }
 
 // Define a type for context keys to avoid collisions
@@ -247,6 +265,24 @@ func initDB() {
 		log.Fatalf("Failed to create series table: %v", err)
 	}
 
+	// Migrate existing database for rating
+	_, _ = db.Exec("ALTER TABLE series ADD COLUMN IF NOT EXISTS rating INTEGER DEFAULT 0")
+
+	// Create comments table
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS comments (
+			id SERIAL PRIMARY KEY,
+			user_id INTEGER NOT NULL,
+			imdb_id VARCHAR(20) NOT NULL,
+			content TEXT NOT NULL,
+			created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+		);
+	`)
+	if err != nil {
+		log.Fatalf("Failed to create comments table: %v", err)
+	}
+
 	// Migrate existing database if necessary (increase year column length)
 	_, _ = db.Exec("ALTER TABLE series ALTER COLUMN year TYPE VARCHAR(20)")
 
@@ -310,6 +346,13 @@ func main() {
 			}
 			return (a * 100) / b
 		},
+		"seq": func(start, end int) []int {
+			var res []int
+			for i := start; i <= end; i++ {
+				res = append(res, i)
+			}
+			return res
+		},
 	}
 	templates = template.Must(template.New("").Funcs(funcMap).ParseGlob("templates/*.html"))
 
@@ -327,6 +370,10 @@ func main() {
 	http.Handle("/admin/add-user", authMiddleware(adminMiddleware(http.HandlerFunc(adminAddUserHandler))))
 	http.Handle("/admin/reset-password", authMiddleware(adminMiddleware(http.HandlerFunc(adminResetPasswordHandler))))
 	http.Handle("/admin/delete-user", authMiddleware(adminMiddleware(http.HandlerFunc(adminDeleteUserHandler))))
+	http.Handle("/explore", authMiddleware(http.HandlerFunc(exploreHandler)))
+	http.Handle("/update-rating", authMiddleware(http.HandlerFunc(updateRatingHandler)))
+	http.Handle("/add-comment", authMiddleware(http.HandlerFunc(addCommentHandler)))
+	http.Handle("/series", authMiddleware(http.HandlerFunc(seriesDetailHandler)))
 
 	// New Authentication Routes (unprotected)
 	http.HandleFunc("/login", loginHandler)
@@ -500,7 +547,7 @@ func getUserInfos(users []User) []UserWithAvatar {
 
 // getAllSeriesForUser retrieves all series for a given user ID from the database.
 func getAllSeriesForUser(userID int) ([]Series, error) {
-	rows, err := db.Query("SELECT id, title, year, imdb_id, episodes_watched, total_episodes, status, cover_url FROM series WHERE user_id = $1", userID)
+	rows, err := db.Query("SELECT id, title, year, imdb_id, episodes_watched, total_episodes, status, cover_url, rating FROM series WHERE user_id = $1", userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query series for user %d: %w", userID, err)
 	}
@@ -509,7 +556,7 @@ func getAllSeriesForUser(userID int) ([]Series, error) {
 	var seriesList []Series
 	for rows.Next() {
 		var s Series
-		if err := rows.Scan(&s.ID, &s.Title, &s.Year, &s.IMDBID, &s.EpisodesWatched, &s.TotalEpisodes, &s.Status, &s.CoverURL); err != nil {
+		if err := rows.Scan(&s.ID, &s.Title, &s.Year, &s.IMDBID, &s.EpisodesWatched, &s.TotalEpisodes, &s.Status, &s.CoverURL, &s.Rating); err != nil {
 			log.Printf("Error scanning series: %v", err)
 			continue
 		}
@@ -527,10 +574,10 @@ func getAllSeriesForUser(userID int) ([]Series, error) {
 
 // addSeriesToDB inserts a new series into the database.
 func addSeriesToDB(series Series) error {
-	stmt := `INSERT INTO series (user_id, title, year, imdb_id, episodes_watched, total_episodes, status, cover_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
+	stmt := `INSERT INTO series (user_id, title, year, imdb_id, episodes_watched, total_episodes, status, cover_url, rating) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`
 	var newID int
 	err := db.QueryRow(stmt,
-		series.UserID, series.Title, series.Year, series.IMDBID, series.EpisodesWatched, series.TotalEpisodes, series.Status, series.CoverURL,
+		series.UserID, series.Title, series.Year, series.IMDBID, series.EpisodesWatched, series.TotalEpisodes, series.Status, series.CoverURL, series.Rating,
 	).Scan(&newID)
 	if err != nil {
 		return fmt.Errorf("failed to insert series into database: %w", err)
@@ -982,6 +1029,112 @@ func addHandler(w http.ResponseWriter, r *http.Request) {
 	successMsg := fmt.Sprintf("✅ '%s' erfolgreich hinzugefügt!", omdbSeries.Title)
 
 	http.Redirect(w, r, fmt.Sprintf("/?successMessage=%s", url.QueryEscape(successMsg)), http.StatusSeeOther)
+}
+
+func updateRatingHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	user := getUserFromContext(r.Context())
+	if user == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	idStr := r.FormValue("id")
+	ratingStr := r.FormValue("rating")
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	rating, err := strconv.Atoi(ratingStr)
+	if err != nil || rating < 1 || rating > 5 {
+		http.Error(w, "Invalid rating (must be 1-5)", http.StatusBadRequest)
+		return
+	}
+
+	_, err = db.Exec("UPDATE series SET rating = $1 WHERE id = $2 AND user_id = $3", rating, id, user.ID)
+	if err != nil {
+		http.Error(w, "Error updating rating", http.StatusInternalServerError)
+		return
+	}
+
+	// Redirect back to referring page or mylist
+	referer := r.Header.Get("Referer")
+	if referer == "" {
+		referer = "/mylist"
+	}
+	http.Redirect(w, r, referer, http.StatusSeeOther)
+}
+
+func addCommentHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	user := getUserFromContext(r.Context())
+	if user == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	imdbID := r.FormValue("imdb_id")
+	content := r.FormValue("content")
+
+	if imdbID == "" || strings.TrimSpace(content) == "" {
+		http.Error(w, "Comment cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	_, err := db.Exec("INSERT INTO comments (user_id, imdb_id, content) VALUES ($1, $2, $3)", user.ID, imdbID, content)
+	if err != nil {
+		http.Error(w, "Error saving comment", http.StatusInternalServerError)
+		return
+	}
+
+	// Redirect back
+	referer := r.Header.Get("Referer")
+	if referer == "" {
+		referer = "/"
+	}
+	http.Redirect(w, r, referer, http.StatusSeeOther)
+}
+
+// getCommentsByIMDBID fetches all comments for a series and attaches user info.
+func getCommentsByIMDBID(imdbID string) ([]Comment, error) {
+	rows, err := db.Query(`
+		SELECT c.id, c.user_id, c.content, c.created_at, u.username 
+		FROM comments c 
+		JOIN users u ON c.user_id = u.id 
+		WHERE c.imdb_id = $1 
+		ORDER BY c.created_at DESC`, imdbID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var comments []Comment
+	for rows.Next() {
+		var c Comment
+		err := rows.Scan(&c.ID, &c.UserID, &c.Content, &c.CreatedAt, &c.Username)
+		if err != nil {
+			continue
+		}
+		// Generate initial for avatar
+		if len(c.Username) > 0 {
+			c.Initial = strings.ToUpper(string(c.Username[0]))
+		} else {
+			c.Initial = "U"
+		}
+		comments = append(comments, c)
+	}
+	return comments, nil
 }
 
 func updateHandler(w http.ResponseWriter, r *http.Request) {
@@ -1578,6 +1731,7 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		stats = append(stats, UserStatsData{
+			UserID:          u.ID,
 			User:            u.Username,
 			EpisodesWatched: episodesWatched,
 			EpisodesTotal:   episodesTotal,
@@ -1735,6 +1889,146 @@ func adminDeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // loginHandler renders the login form or handles login submission.
+// exploreHandler displays another user's series list.
+func exploreHandler(w http.ResponseWriter, r *http.Request) {
+	currentUser := getUserFromContext(r.Context())
+	if currentUser == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	userIDStr := r.URL.Query().Get("id")
+	if userIDStr == "" {
+		http.Redirect(w, r, "/stats", http.StatusSeeOther)
+		return
+	}
+
+	targetUserID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	if targetUserID == currentUser.ID {
+		http.Redirect(w, r, "/mylist", http.StatusSeeOther)
+		return
+	}
+
+	targetUser, err := getUserByID(targetUserID)
+	if err != nil || targetUser == nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	// Fetch viewed user's series
+	targetSeries, err := getAllSeriesForUser(targetUserID)
+	if err != nil {
+		http.Error(w, "Error fetching user series", http.StatusInternalServerError)
+		return
+	}
+
+	// Fetch current user's series for comparison
+	userSeries, err := getAllSeriesForUser(currentUser.ID)
+	if err != nil {
+		http.Error(w, "Error fetching your series", http.StatusInternalServerError)
+		return
+	}
+
+	// Create map for mutual series
+	userSeriesMap := make(map[string]bool)
+	for _, s := range userSeries {
+		userSeriesMap[s.IMDBID] = true
+	}
+
+	isMutualMap := make(map[string]bool)
+	for _, s := range targetSeries {
+		if userSeriesMap[s.IMDBID] {
+			isMutualMap[s.IMDBID] = true
+		}
+	}
+
+	data := PageData{
+		SeriesList:  targetSeries,
+		User:        currentUser,
+		CurrentUser: getUserWithAvatar(*currentUser),
+		ViewedUser:  targetUser,
+		IsMutual:    isMutualMap,
+	}
+
+	err = templates.ExecuteTemplate(w, "explore.html", data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func seriesDetailHandler(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromContext(r.Context())
+	if user == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	imdbID := r.URL.Query().Get("id")
+	if imdbID == "" {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	// Fetch global comments
+	comments, err := getCommentsByIMDBID(imdbID)
+	if err != nil {
+		comments = []Comment{}
+	}
+
+	// Fetch series metadata. Try database first (any user's entry)
+	var s Series
+	err = db.QueryRow("SELECT title, year, imdb_id, cover_url FROM series WHERE imdb_id = $1 LIMIT 1", imdbID).
+		Scan(&s.Title, &s.Year, &s.IMDBID, &s.CoverURL)
+
+	if err == sql.ErrNoRows {
+		// Not in DB, fetch from OMDb
+		omdbSeries, omdbErr := fetchIMDBData(imdbID)
+		if omdbErr != nil {
+			http.Error(w, "Series not found", http.StatusNotFound)
+			return
+		}
+		s.Title = omdbSeries.Title
+		s.Year = omdbSeries.Year
+		s.IMDBID = omdbSeries.IMDBID
+		s.CoverURL = omdbSeries.Poster
+	} else if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+
+	// Also check if CURRENT user has it rated
+	var currentRating int
+	_ = db.QueryRow("SELECT rating FROM series WHERE imdb_id = $1 AND user_id = $2", imdbID, user.ID).Scan(&currentRating)
+	s.Rating = currentRating
+
+	// Also check if CURRENT user has it in their list
+	var seriesID int
+	_ = db.QueryRow("SELECT id FROM series WHERE imdb_id = $1 AND user_id = $2", imdbID, user.ID).Scan(&seriesID)
+	s.ID = seriesID
+
+	allUsers, _ := getUsers()
+
+	data := PageData{
+		ActiveSeries: &s,
+		Comments:     comments,
+		User:         user,
+		CurrentUser:  getUserWithAvatar(*user),
+		Users:        getUserInfos(allUsers),
+	}
+
+	err = templates.ExecuteTemplate(w, "detail.html", data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		successMessage := r.URL.Query().Get("successMessage")

@@ -176,6 +176,19 @@
         </div>
 
         <div class="header-right">
+            <div class="profile-switcher">
+                {{range .Users}}
+                {{if eq .ID $.CurrentUser.ID}}
+                <a href="/" class="profile-avatar active" title="Das bist du!">
+                    <div class="avatar-img">{{.Initial}}</div>
+                </a>
+                {{else}}
+                <a href="/explore?id={{.ID}}" class="profile-avatar" title="Bibliothek von {{.Username}} ansehen">
+                    <div class="avatar-img">{{.Initial}}</div>
+                </a>
+                {{end}}
+                {{end}}
+            </div>
             <a href="/logout" class="logout-btn">Logout</a>
         </div>
     </header>

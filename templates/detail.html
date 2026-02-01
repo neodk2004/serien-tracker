@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.ActiveSeries.Title}} – Community – Serien Tracker</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .detail-hero {
+            height: 60vh;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            padding: 40px;
+            background-image: linear-gradient(rgba(20, 20, 20, 0), rgba(20, 20, 20, 1)),
+            url('{{.ActiveSeries.CoverURL}}');
+        }
+
+        .detail-content {
+            max-width: 1200px;
+            margin: -100px auto 40px;
+            padding: 0 20px;
+            position: relative;
+            z-index: 10;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 40px;
+        }
+
+        .detail-poster {
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .detail-info {
+            padding-top: 100px;
+        }
+
+        .detail-title {
+            font-size: 48px;
+            margin-bottom: 10px;
+            color: white;
+        }
+
+        .detail-meta {
+            color: var(--netflix-light-gray);
+            font-size: 18px;
+            margin-bottom: 30px;
+        }
+
+        /* Star Rating */
+        .rating-box {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .rating-stars {
+            display: flex;
+            gap: 10px;
+            font-size: 32px;
+            margin-top: 10px;
+        }
+
+        .star {
+            cursor: pointer;
+            color: #333;
+            transition: 0.2s;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+
+        .star.filled {
+            color: #ffc107;
+        }
+
+        .star:hover {
+            transform: scale(1.2);
+        }
+
+        /* Comments Section */
+        .comments-section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .comment-form {
+            margin-bottom: 40px;
+        }
+
+        .comment-input {
+            width: 100%;
+            background: #222;
+            border: 1px solid #444;
+            color: white;
+            padding: 15px;
+            border-radius: 4px;
+            min-height: 100px;
+            margin-bottom: 15px;
+            font-family: inherit;
+        }
+
+        .comment-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .comment-item {
+            display: flex;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .comment-avatar {
+            width: 40px;
+            height: 40px;
+            background: var(--netflix-red);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .comment-body {
+            flex-grow: 1;
+        }
+
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .comment-username {
+            font-weight: bold;
+            color: white;
+        }
+
+        .comment-date {
+            font-size: 12px;
+            color: var(--netflix-light-gray);
+        }
+
+        .comment-content {
+            color: #ddd;
+            line-height: 1.5;
+        }
+
+        @media screen and (max-width: 768px) {
+            .detail-content {
+                grid-template-columns: 1fr;
+            }
+
+            .detail-poster {
+                max-width: 200px;
+                margin: 0 auto;
+            }
+
+            .detail-info {
+                padding-top: 20px;
+                text-align: center;
+            }
+
+            .rating-stars {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="main-header">
+        <div class="header-left">
+            <a href="/" class="logo" style="text-decoration: none;">
+                <span class="logo-icon">🎬</span>
+                <span class="logo-text">SERIEN TRACKER</span>
+            </a>
+        </div>
+
+        <div class="header-center">
+            <nav class="nav-menu">
+                <a href="/">Startseite</a>
+                <a href="/mylist">Meine Liste</a>
+                <a href="/stats">Statistiken</a>
+            </nav>
+        </div>
+
+        <div class="header-right">
+            <div class="profile-switcher">
+                {{range .Users}}
+                {{if eq .ID $.CurrentUser.ID}}
+                <a href="/" class="profile-avatar active" title="Das bist du!">
+                    <div class="avatar-img">{{.Initial}}</div>
+                </a>
+                {{else}}
+                <a href="/explore?id={{.ID}}" class="profile-avatar" title="Bibliothek von {{.Username}} ansehen">
+                    <div class="avatar-img">{{.Initial}}</div>
+                </a>
+                {{end}}
+                {{end}}
+            </div>
+            <a href="/logout" class="logout-btn">Logout</a>
+        </div>
+    </header>
+
+    <div class="detail-hero"></div>
+
+    <div class="detail-content">
+        <div class="detail-sidebar">
+            <img src="{{.ActiveSeries.CoverURL}}" alt="{{.ActiveSeries.Title}}" class="detail-poster">
+        </div>
+
+        <div class="detail-info">
+            <h1 class="detail-title">{{.ActiveSeries.Title}}</h1>
+            <div class="detail-meta">{{.ActiveSeries.Year}}</div>
+
+            <div class="rating-box">
+                <h3>Deine Bewertung</h3>
+                <div class="rating-stars">
+                    {{range $i := (seq 1 5)}}
+                    <form action="/update-rating" method="POST" style="display: inline;">
+                        <input type="hidden" name="id" value="{{$.ActiveSeries.ID}}">
+                        <input type="hidden" name="rating" value="{{$i}}">
+                        <button type="submit" class="star {{if le $i $.ActiveSeries.Rating}}filled{{end}}"
+                            title="{{$i}} Sterne geben">
+                            ★
+                        </button>
+                    </form>
+                    {{end}}
+                </div>
+                {{if eq .ActiveSeries.ID 0}}
+                <p style="font-size: 12px; color: #888; margin-top: 10px;">
+                    (Du musst die Serie zu deiner Liste hinzufügen, um sie zu bewerten)
+                </p>
+                {{end}}
+            </div>
+
+            <div class="comments-section">
+                <h3>Community Austausch</h3>
+
+                <form action="/add-comment" method="POST" class="comment-form">
+                    <input type="hidden" name="imdb_id" value="{{.ActiveSeries.IMDBID}}">
+                    <textarea name="content" class="comment-input" placeholder="Was denkst du über diese Serie?"
+                        required></textarea>
+                    <button type="submit" class="netflix-btn primary">Posten</button>
+                </form>
+
+                <div class="comment-list">
+                    {{range .Comments}}
+                    <div class="comment-item">
+                        <div class="comment-avatar">{{.Initial}}</div>
+                        <div class="comment-body">
+                            <div class="comment-header">
+                                <span class="comment-username">{{.Username}}</span>
+                                <span class="comment-date">{{.CreatedAt.Format "02.01.2006 15:04"}}</span>
+                            </div>
+                            <div class="comment-content">{{.Content}}</div>
+                        </div>
+                    </div>
+                    {{else}}
+                    <p style="color: #666; font-style: italic;">Noch keine Kommentare. Sei der Erste!</p>
+                    {{end}}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="netflix-footer">
+        <div class="footer-bottom">© 2024 Serien Tracker – Community Ebene</div>
+    </footer>
+
+</body>
+
+</html>

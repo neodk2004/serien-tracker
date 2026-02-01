@@ -37,13 +37,15 @@
         <div class="header-right">
             <div class="profile-switcher">
                 {{range .Users}}
-                <a href="/?user={{.Username}}"
-                    class="profile-avatar {{if eq .Username $.CurrentUser.Username}}active{{end}}"
-                    title="{{.Username}}">
-                    <div class="avatar-img">
-                        {{.Initial}}
-                    </div>
+                {{if eq .ID $.CurrentUser.ID}}
+                <a href="/" class="profile-avatar active" title="Das bist du!">
+                    <div class="avatar-img">{{.Initial}}</div>
                 </a>
+                {{else}}
+                <a href="/explore?id={{.ID}}" class="profile-avatar" title="Bibliothek von {{.Username}} ansehen">
+                    <div class="avatar-img">{{.Initial}}</div>
+                </a>
+                {{end}}
                 {{end}}
             </div>
             <a href="/logout" class="logout-btn">Logout</a>
@@ -83,11 +85,18 @@
             {{range .SeriesList}}
             <div class="poster-item">
 
-                <div class="poster-container">
+                <div class="poster-container" onclick="window.location.href='/series?id={{.IMDBID}}'"
+                    style="cursor: pointer;">
                     {{if .CoverURL}}
                     <img class="poster-image" src="{{.CoverURL}}" alt="{{.Title}}">
                     {{else}}
                     <div class="poster-image">?</div>
+                    {{end}}
+
+                    {{if gt .Rating 0}}
+                    <div class="poster-rating">
+                        {{range $i := (seq 1 .Rating)}}★{{end}}
+                    </div>
                     {{end}}
                 </div>
 
